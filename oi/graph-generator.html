@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>图生成器 - 有向/无向 | 有权/无权 | 拖拽移动节点</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+        }
+        body {
+            font-family: 'Segoe UI', 'Fira Code', monospace;
+            background: #f1f5f9;
+            margin: 0;
+            padding: 20px;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .graph-editor {
+            max-width: 1500px;
+            width: 100%;
+            height: 90vh;
+            background: white;
+            border-radius: 28px;
+            box-shadow: 0 20px 35px -12px rgba(0,0,0,0.2);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .toolbar {
+            background: #1e293b;
+            color: white;
+            padding: 12px 20px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 2px solid #334155;
+        }
+        .toolbar button, .toolbar select, .toolbar label {
+            background: #0f172a;
+            border: none;
+            color: #e2e8f0;
+            padding: 8px 16px;
+            border-radius: 40px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: 0.2s;
+            font-family: inherit;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .toolbar button:hover {
+            background: #3b82f6;
+            color: white;
+        }
+        .toolbar select {
+            background: #0f172a;
+            cursor: pointer;
+        }
+        .mode-indicator {
+            background: #334155;
+            font-family: monospace;
+            font-weight: bold;
+            padding: 6px 14px;
+            border-radius: 40px;
+            font-size: 13px;
+        }
+        .file-input-label {
+            background: #0f172a;
+            cursor: pointer;
+        }
+        input[type="file"] {
+            display: none;
+        }
+        .status {
+            margin-left: auto;
+            font-size: 13px;
+            background: #0f172a80;
+            padding: 6px 12px;
+            border-radius: 24px;
+            font-family: monospace;
+        }
+        .main-panel {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+        .editor-panel {
+            width: 340px;
+            background: #f8fafc;
+            border-right: 1px solid #cbd5e1;
+            display: flex;
+            flex-direction: column;
+            padding: 16px;
+            gap: 12px;
+        }
+        .editor-panel textarea {
+            width: 100%;
+            height: 260px;
+            font-family: 'Fira Code', monospace;
+            font-size: 12px;
+            background: #0f172a;
+            color: #e2e8f0;
+            border: none;
+            border-radius: 16px;
+            padding: 12px;
+            resize: vertical;
+            outline: none;
+            line-height: 1.5;
+        }
+        .legend {
+            background: #e2e8f0;
+            border-radius: 16px;
+            padding: 12px;
+            font-size: 12px;
+            color: #1e293b;
+        }
+        .legend i {
+            width: 22px;
+        }
+        .btn-generate {
+            background: #10b981;
+            border: none;
+            padding: 10px;
+            border-radius: 40px;
+            font-weight: bold;
+            color: white;
+            cursor: pointer;
+            font-size: 16px;
+            transition: 0.2s;
+        }
+        .canvas-panel {
+            flex: 1;
+            position: relative;
+            background: #ffffff;
+            overflow: hidden;
+        }
+        canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+            background: radial-gradient(circle at 10% 20%, #f9fbfd, #edf2f7);
+            cursor: grab;
+        }
+        canvas:active {
+            cursor: grabbing;
+        }
+        .info-tip {
+            position: absolute;
+            bottom: 12px;
+            right: 12px;
+            background: #1e293be0;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-family: monospace;
+            pointer-events: none;
+            backdrop-filter: blur(4px);
+        }
+        .weight-preview {
+            font-size: 11px;
+            background: #f1f5f9;
+            border-radius: 12px;
+            padding: 6px;
+            text-align: center;
+        }
+        @media (max-width: 700px) {
+            .editor-panel { width: 280px; }
+            .toolbar button, .toolbar select { padding: 6px 10px; font-size: 11px; }
+        }
+    </style>
+</head>
+<body>
+<div class="graph-editor">
+    <div class="toolbar">
+        <button id="btn-add-node"><i class="fas fa-plus-circle"></i> 添加节点</button>
+        <button id="btn-clear"><i class="fas fa-trash-alt"></i> 清空</button>
+        <button id="btn-random"><i class="fas fa-dice-d6"></i> 随机图 (5节点)</button>
+        
+        <!-- 图类型切换 -->
+        <select id="graph-type">
+            <option value="undirected">🔗 无向图 (Undirected)</option>
+            <option value="directed">➡️ 有向图 (Directed)</option>
+        </select>
+        
+        <!-- 边权切换 -->
+        <select id="weight-type">
+            <option value="unweighted">⚖️ 无权图</option>
+            <option value="weighted">🔢 有权图 (随机权值1-10)</option>
+        </select>
+        
+        <div class="mode-indicator"><i class="fas fa-arrows-alt"></i> 拖拽移动 | 单击选中 + 连线</div>
+        <label class="file-input-label"><i class="fas fa-upload"></i> 导入 JSON<input type="file" id="import-file" accept=".json"></label>
+        <button id="btn-export"><i class="fas fa-download"></i> 导出 JSON</button>
+        <div class="status" id="status-bar">节点:0 边:0</div>
+    </div>
+    <div class="main-panel">
+        <div class="editor-panel">
+            <div style="font-weight: bold; margin-bottom: 4px;">📝 邻接表 / 边列表 (支持带权/方向)</div>
+            <textarea id="graph-text" placeholder='示例1 无向无权邻接表:
+0: 1,2
+1: 0,3
+2: 0,3
+3: 1,2
+
+示例2 有向带权边列表 (格式: from to weight):
+0 1 5
+0 2 3
+1 3 2
+2 3 7
+
+示例3 无向带权边列表:
+0 1 4
+0 2 6
+1 3 8
+注意: 权重>=0, 有向图会渲染箭头。'></textarea>
+            <button class="btn-generate" id="btn-parse"><i class="fas fa-sync-alt"></i> 从文本生成图</button>
+            <div class="legend">
+                <div><i class="fas fa-arrows-alt"></i> <strong>拖拽节点</strong> — 移动位置</div>
+                <div><i class="fas fa-mouse-pointer"></i> <strong>单击节点</strong> — 高亮选中</div>
+                <div><i class="fas fa-link"></i> <strong>再单击另一节点</strong> — 添加边</div>
+                <div><i class="fas fa-weight-hanging"></i> <strong>有权图时</strong> — 双击边修改权重</div>
+                <div><i class="fas fa-trash-alt"></i> <strong>双击节点</strong> — 删除节点及边</div>
+                <div><i class="fas fa-plus-circle"></i> <strong>空白单击</strong> — 新增节点</div>
+                <div id="weight-hint" style="color:#0f172a;">🎯 当前: 无权/无向</div>
+            </div>
+        </div>
+        <div class="canvas-panel">
+            <canvas id="graph-canvas" width="800" height="500"></canvas>
+            <div class="info-tip">💡 提示: 拖拽移动节点 | 有权图时双击边可编辑权重 | 箭头方向=有向边</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function(){
+        // ---------- 全局配置 ----------
+        let isDirected = false;      // 默认无向
+        let isWeighted = false;      // 默认无权
+        
+        // 数据结构: 边 { from, to, weight (可选) }
+        let nodes = [];              // { id, label, x, y }
+        let edges = [];             // 有向图时存储每条有向边；无向图时存储为 (from,to) 但渲染时双向或单向根据设置
+        let nextId = 1;
+        
+        // 交互状态
+        let draggingNode = null;
+        let dragOffsetX = 0, dragOffsetY = 0;
+        let selectedNodeId = null;
+        
+        // 临时用于双击边编辑权重
+        let lastClickTime = 0;
+        
+        const canvas = document.getElementById('graph-canvas');
+        const ctx = canvas.getContext('2d');
+        const statusBar = document.getElementById('status-bar');
+        const graphTextarea = document.getElementById('graph-text');
+        const graphTypeSelect = document.getElementById('graph-type');
+        const weightTypeSelect = document.getElementById('weight-type');
+        const weightHintSpan = document.getElementById('weight-hint');
+        
+        // 辅助函数
+        function updateStats() {
+            statusBar.innerText = `节点:${nodes.length} 边:${edges.length} ${isDirected ? '(有向)' : '(无向)'} ${isWeighted ? '带权' : ''}`;
+        }
+        
+        // 更新UI显示当前模式
+        function updateModeHint() {
+            const dirStr = isDirected ? "有向图" : "无向图";
+            const weightStr = isWeighted ? "有权图" : "无权图";
+            weightHintSpan.innerText = `🎯 当前: ${dirStr} | ${weightStr}`;
+            updateStats();
+            render();
+        }
+        
+        // 监听下拉变化
+        function bindModeSelectors() {
+            graphTypeSelect.addEventListener('change', (e) => {
+                isDirected = (e.target.value === 'directed');
+                updateModeHint();
+                render();
+            });
+            weightTypeSelect.addEventListener('change', (e) => {
+                isWeighted = (e.target.value === 'weighted');
+                // 如果变成有权图，给所有现有边赋默认权重 (如果原来没有weight字段)
+                if(isWeighted) {
+                    for(let edge of edges) {
+                        if(edge.weight === undefined || edge.weight === null) {
+                            edge.weight = 1;
+                        }
+                    }
+                } else {
+                    // 变成无权图，删除权重字段
+                    for(let edge of edges) {
+                        delete edge.weight;
+                    }
+                }
+                updateModeHint();
+                render();
+            });
+        }
+        
+        // ---------- 绘图工具: 绘制箭头 (有向图) ----------
+        function drawArrowhead(fromX, fromY, toX, toY, size=10) {
+            const angle = Math.atan2(toY - fromY, toX - fromX);
+            const arrowX = toX;
+            const arrowY = toY;
+            const ang1 = angle + Math.PI / 6;
+            const ang2 = angle - Math.PI / 6;
+            const wingLen = size;
+            ctx.beginPath();
+            ctx.moveTo(arrowX, arrowY);
+            ctx.lineTo(arrowX - wingLen * Math.cos(ang1), arrowY - wingLen * Math.sin(ang1));
+            ctx.lineTo(arrowX - wingLen * Math.cos(ang2), arrowY - wingLen * Math.sin(ang2));
+            ctx.fillStyle = '#ef4444';
+            ctx.fill();
+        }
+        
+        // 绘制边线 (带权文本)
+        function drawEdge(edge, fromNode, toNode) {
+            const fromX = fromNode.x, fromY = fromNode.y;
+            const toX = toNode.x, toY = toNode.y;
+            ctx.beginPath();
+            ctx.moveTo(fromX, fromY);
+            ctx.lineTo(toX, toY);
+            ctx.strokeStyle = isDirected ? '#ef4444' : '#64748b';
+            ctx.lineWidth = 2.5;
+            ctx.stroke();
+            
+            // 绘制权值
+            if(isWeighted && edge.weight !== undefined) {
+                const midX = (fromX + toX)/2;
+                const midY = (fromY + toY)/2;
+                ctx.font = 'bold 14px "Segoe UI"';
+                ctx.fillStyle = '#1e293b';
+                ctx.shadowBlur = 0;
+                ctx.fillText(edge.weight, midX+5, midY-5);
+            }
+            // 有向图绘制箭头 (指向to)
+            if(isDirected) {
+                // 为了避免箭头与节点重叠，缩短终点位置
+                const angle = Math.atan2(toY - fromY, toX - fromX);
+                const offset = 22; // 节点半径
+                const arrowX = toX - offset * Math.cos(angle);
+                const arrowY = toY - offset * Math.sin(angle);
+                drawArrowhead(fromX, fromY, arrowX, arrowY, 9);
+            }
+        }
+        
+        // 绘制整个图
+        function drawGraph() {
+            if (!ctx) return;
+            const w = canvas.width, h = canvas.height;
+            ctx.clearRect(0, 0, w, h);
+            
+            // 绘制边 (支持有向/无向)
+            edges.forEach(edge => {
+                const fromNode = nodes.find(n => n.id === edge.from);
+                const toNode = nodes.find(n => n.id === edge.to);
+                if (!fromNode || !toNode) return;
+                drawEdge(edge, fromNode, toNode);
+                // 无向图不绘制双向箭头, 只有一条线 (已经画了)
+                // 如果有向图且需要反向边单独存在, 由edges列表中的另一条边处理
+            });
+            
+            // 绘制节点
+            nodes.forEach(node => {
+                const isSelected = (selectedNodeId === node.id);
+                ctx.beginPath();
+                ctx.arc(node.x, node.y, 22, 0, 2*Math.PI);
+                ctx.fillStyle = isSelected ? '#f97316' : '#3b82f6';
+                ctx.fill();
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+                if (isSelected) {
+                    ctx.beginPath();
+                    ctx.arc(node.x, node.y, 27, 0, 2*Math.PI);
+                    ctx.strokeStyle = '#f97316';
+                    ctx.lineWidth = 2.5;
+                    ctx.stroke();
+                }
+                ctx.fillStyle = 'white';
+                ctx.font = 'bold 16px "Segoe UI"';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(node.label, node.x, node.y);
+            });
+        }
+        
+        function render() {
+            drawGraph();
+            updateStats();
+        }
+        
+        function resizeCanvasAndDraw() {
+            const container = canvas.parentElement;
+            const rect = container.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+            render();
+        }
+        
+        // ----- 图操作: 节点/边管理 -----
+        function addNodeAt(x, y) {
+            const newId = nextId++;
+            const label = String(newId);
+            let posX = x, posY = y;
+            if (!posX || isNaN(posX)) {
+                posX = canvas.width/2 + (Math.random() - 0.5)*100;
+                posY = canvas.height/2 + (Math.random() - 0.5)*100;
+            }
+            posX = Math.min(canvas.width - 30, Math.max(30, posX));
+            posY = Math.min(canvas.height - 30, Math.max(30, posY));
+            nodes.push({ id: newId, label: label, x: posX, y: posY });
+            render();
+        }
+        
+        function deleteNodeById(nodeId) {
+            nodes = nodes.filter(n => n.id !== nodeId);
+            edges = edges.filter(e => e.from !== nodeId && e.to !== nodeId);
+            if (selectedNodeId === nodeId) selectedNodeId = null;
+            render();
+        }
+        
+        // 添加边: 根据当前模式（有向/无向，有权/无权）添加
+        function addEdge(fromId, toId) {
+            if (fromId === toId) return false;
+            if (!isDirected) {
+                // 无向图: 检查是否已经存在无向边(双向任意)
+                const exists = edges.some(e => (e.from === fromId && e.to === toId) || (e.from === toId && e.to === fromId));
+                if (exists) return false;
+                const newEdge = { from: fromId, to: toId };
+                if (isWeighted) newEdge.weight = Math.floor(Math.random() * 10) + 1; // 随机权重1-10
+                edges.push(newEdge);
+            } else {
+                // 有向图: 检查同向边是否已存在
+                const exists = edges.some(e => e.from === fromId && e.to === toId);
+                if (exists) return false;
+                const newEdge = { from: fromId, to: toId };
+                if (isWeighted) newEdge.weight = Math.floor(Math.random() * 10) + 1;
+                edges.push(newEdge);
+            }
+            render();
+            return true;
+        }
+        
+        // 修改边的权重
+        function editEdgeWeight(edge) {
+            if (!isWeighted) return;
+            const newWeight = prompt(`请输入边的权重 (当前: ${edge.weight})`, edge.weight);
+            if (newWeight !== null && !isNaN(parseFloat(newWeight)) && parseFloat(newWeight) >= 0) {
+                edge.weight = parseFloat(newWeight);
+                render();
+            } else if(newWeight !== null) alert("权重必须是有效数字");
+        }
+        
+        // 通过坐标查找边 (用于双击边)
+        function findEdgeAtCoord(mouseX, mouseY) {
+            // 遍历所有边，计算点到线段最短距离
+            for(let edge of edges) {
+                const fromNode = nodes.find(n => n.id === edge.from);
+                const toNode = nodes.find(n => n.id === edge.to);
+                if(!fromNode || !toNode) continue;
+                const x1 = fromNode.x, y1 = fromNode.y;
+                const x2 = toNode.x, y2 = toNode.y;
+                const dist = pointToSegmentDistance(mouseX, mouseY, x1, y1, x2, y2);
+                if(dist < 12) { // 阈值
+                    return edge;
+                }
+            }
+            return null;
+        }
+        
+        function pointToSegmentDistance(px, py, x1, y1, x2, y2) {
+            const ax = px - x1, ay = py - y1;
+            const bx = x2 - x1, by = y2 - y1;
+            const dot = ax * bx + ay * by;
+            const len2 = bx * bx + by * by;
+            if (len2 === 0) return Math.hypot(ax, ay);
+            let t = dot / len2;
+            t = Math.max(0, Math.min(1, t));
+            const projX = x1 + t * bx;
+            const projY = y1 + t * by;
+            return Math.hypot(px - projX, py - projY);
+        }
+        
+        // 删除边
+        function deleteEdge(edge) {
+            const index = edges.indexOf(edge);
+            if (index !== -1) edges.splice(index, 1);
+            render();
+        }
+        
+        // ---------- 智能解析文本 (支持邻接表/边列表，支持权重和有向) ----------
+        function parseGraphFromText(text, forceDirected, forceWeighted) {
+            const lines = text.split(/\r?\n/);
+            const nodeSet = new Set();
+            const rawEdges = []; // {from, to, weight?}
+            let detectedWeighted = false;
+            let detectedDirectedHeuristic = false;
+            
+            for(let line of lines) {
+                line = line.trim();
+                if(line === "" || line.startsWith("#")) continue;
+                // 邻接表模式: 包含 ":" 
+                if(line.includes(':')) {
+                    let [leftPart, rightPart] = line.split(':');
+                    leftPart = leftPart.trim();
+                    if(leftPart === "") continue;
+                    nodeSet.add(leftPart);
+                    if(rightPart) {
+                        const neighbors = rightPart.split(/[ ,]+/).filter(s => s.trim().length > 0);
+                        for(let nb of neighbors) {
+                            nb = nb.trim();
+                            nodeSet.add(nb);
+                            rawEdges.push({from: leftPart, to: nb});
+                        }
+                    }
+                } else {
+                    // 边列表模式: 可能 "from to" 或者 "from to weight"
+                    const parts = line.split(/\s+/);
+                    if(parts.length >= 2) {
+                        const u = parts[0].trim();
+                        const v = parts[1].trim();
+                        if(u && v) {
+                            nodeSet.add(u);
+                            nodeSet.add(v);
+                            let w = null;
+                            if(parts.length >= 3 && !isNaN(parseFloat(parts[2]))) {
+                                w = parseFloat(parts[2]);
+                                detectedWeighted = true;
+                            }
+                            rawEdges.push({from: u, to: v, weight: w});
+                        }
+                    }
+                }
+            }
+            if(nodeSet.size === 0) return null;
+            
+            // 生成节点映射
+            const nodeList = Array.from(nodeSet).map(label => ({ id: null, label: label, x: 0, y: 0 }));
+            nodeList.forEach((node, idx) => { node.id = idx + 1; });
+            const labelToId = new Map();
+            nodeList.forEach(n => labelToId.set(n.label, n.id));
+            
+            // 构建边 (去重基于有向/无向设置)
+            const uniqueEdges = [];
+            const edgeKeySet = new Set();
+            for(let e of rawEdges) {
+                const fromId = labelToId.get(e.from);
+                const toId = labelToId.get(e.to);
+                if(!fromId || !toId) continue;
+                let key = isDirected ? `${fromId}->${toId}` : (fromId < toId ? `${fromId}-${toId}` : `${toId}-${fromId}`);
+                if(!edgeKeySet.has(key)) {
+                    edgeKeySet.add(key);
+                    const newEdge = { from: fromId, to: toId };
+                    if(forceWeighted || detectedWeighted) {
+                        newEdge.weight = (e.weight !== null && e.weight !== undefined) ? e.weight : Math.floor(Math.random() * 9) + 1;
+                    }
+                    uniqueEdges.push(newEdge);
+                }
+            }
+            
+            // 圆形布局
+            const w = canvas.width || 800;
+            const h = canvas.height || 500;
+            const centerX = w/2, centerY = h/2;
+            const radius = Math.min(w, h) * 0.35;
+            const angleStep = (2 * Math.PI) / nodeList.length;
+            nodeList.forEach((node, idx) => {
+                const angle = idx * angleStep;
+                node.x = centerX + radius * Math.cos(angle);
+                node.y = centerY + radius * Math.sin(angle);
+            });
+            return { nodes: nodeList, edges: uniqueEdges };
+        }
+        
+        function applyGraph(graphData) {
+            if(!graphData) return false;
+            nodes = graphData.nodes;
+            edges = graphData.edges;
+            if(nodes.length) nextId = Math.max(...nodes.map(n=>n.id)) + 1;
+            else nextId = 1;
+            selectedNodeId = null;
+            resizeCanvasAndDraw();
+            render();
+            return true;
+        }
+        
+        function generateRandomGraph() {
+            const nodeCount = 5;
+            const newNodes = [];
+            for(let i=0;i<nodeCount;i++) {
+                newNodes.push({ id: i+1, label: String(i+1), x: 0, y: 0 });
+            }
+            const w = canvas.width || 800, h = canvas.height || 500;
+            const cx = w/2, cy = h/2;
+            const rad = Math.min(w,h)*0.3;
+            newNodes.forEach((node, idx) => {
+                const angle = (idx / nodeCount) * Math.PI * 2;
+                node.x = cx + rad * Math.cos(angle);
+                node.y = cy + rad * Math.sin(angle);
+            });
+            const newEdges = [];
+            for(let i=0;i<nodeCount;i++) {
+                for(let j=i+1;j<nodeCount;j++) {
+                    if(Math.random() < 0.35) {
+                        if(isDirected && Math.random() > 0.5) {
+                            newEdges.push({ from: i+1, to: j+1 });
+                            if(isWeighted) newEdges[newEdges.length-1].weight = Math.floor(Math.random()*10)+1;
+                        } else if(!isDirected) {
+                            newEdges.push({ from: i+1, to: j+1 });
+                            if(isWeighted) newEdges[newEdges.length-1].weight = Math.floor(Math.random()*10)+1;
+                        }
+                    }
+                    if(isDirected && Math.random() < 0.2 && i!==j) {
+                        newEdges.push({ from: j+1, to: i+1 });
+                        if(isWeighted) newEdges[newEdges.length-1].weight = Math.floor(Math.random()*10)+1;
+                    }
+                }
+            }
+            nodes = newNodes;
+            edges = newEdges;
+            nextId = nodeCount+1;
+            selectedNodeId = null;
+            resizeCanvasAndDraw();
+            render();
+        }
+        
+        function clearGraph() {
+            nodes = [];
+            edges = [];
+            nextId = 1;
+            selectedNodeId = null;
+            render();
+        }
+        
+        function exportGraph() {
+            const exportData = { directed: isDirected, weighted: isWeighted, nodes: nodes.map(n => ({ id: n.id, label: n.label, x: n.x, y: n.y })), edges };
+            const dataStr = JSON.stringify(exportData, null, 2);
+            const blob = new Blob([dataStr], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'graph.json';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+        
+        function importGraphFromJson(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const json = JSON.parse(e.target.result);
+                    if(json.nodes && Array.isArray(json.nodes) && json.edges) {
+                        nodes = json.nodes;
+                        edges = json.edges;
+                        if(json.directed !== undefined) isDirected = json.directed;
+                        if(json.weighted !== undefined) isWeighted = json.weighted;
+                        graphTypeSelect.value = isDirected ? "directed" : "undirected";
+                        weightTypeSelect.value = isWeighted ? "weighted" : "unweighted";
+                        if(nodes.length) nextId = Math.max(...nodes.map(n=>n.id)) + 1;
+                        else nextId = 1;
+                        selectedNodeId = null;
+                        resizeCanvasAndDraw();
+                        updateModeHint();
+                        render();
+                    } else alert("无效的图数据格式");
+                } catch(err) { alert("解析JSON失败"); }
+            };
+            reader.readAsText(file);
+        }
+        
+        // ---------- 交互事件 ----------
+        let mouseDownNode = null;
+        let mouseDownPos = { x: 0, y: 0 };
+        let isDraggingFlag = false;
+        
+        function handleMouseDown(e) {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            const mouseX = (e.clientX - rect.left) * scaleX;
+            const mouseY = (e.clientY - rect.top) * scaleY;
+            let clickedNode = null;
+            for(let i=nodes.length-1;i>=0;i--) {
+                const n = nodes[i];
+                if(Math.hypot(mouseX - n.x, mouseY - n.y) < 25) { clickedNode = n; break; }
+            }
+            if(clickedNode) {
+                mouseDownNode = clickedNode;
+                mouseDownPos = { x: mouseX, y: mouseY };
+                isDraggingFlag = false;
+                canvas.style.cursor = 'grabbing';
+                e.preventDefault();
+            } else {
+                addNodeAt(mouseX, mouseY);
+                mouseDownNode = null;
+                if(selectedNodeId !== null) { selectedNodeId = null; render(); }
+            }
+        }
+        
+        function handleMouseMove(e) {
+            if(!mouseDownNode) return;
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            const mouseX = (e.clientX - rect.left) * scaleX;
+            const mouseY = (e.clientY - rect.top) * scaleY;
+            const dx = mouseX - mouseDownPos.x;
+            const dy = mouseY - mouseDownPos.y;
+            if(!isDraggingFlag && (Math.abs(dx) > 5 || Math.abs(dy) > 5)) isDraggingFlag = true;
+            if(isDraggingFlag) {
+                let newX = mouseDownNode.x + dx;
+                let newY = mouseDownNode.y + dy;
+                newX = Math.min(canvas.width - 25, Math.max(25, newX));
+                newY = Math.min(canvas.height - 25, Math.max(25, newY));
+                mouseDownNode.x = newX;
+                mouseDownNode.y = newY;
+                mouseDownPos = { x: mouseX, y: mouseY };
+                render();
+            }
+        }
+        
+        function handleMouseUp(e) {
+            if(mouseDownNode && !isDraggingFlag) {
+                const clickedNode = mouseDownNode;
+                if(selectedNodeId === null) {
+                    selectedNodeId = clickedNode.id;
+                    render();
+                } else if(selectedNodeId === clickedNode.id) {
+                    selectedNodeId = null;
+                    render();
+                } else {
+                    addEdge(selectedNodeId, clickedNode.id);
+                    selectedNodeId = null;
+                    render();
+                }
+            }
+            draggingNode = null;
+            mouseDownNode = null;
+            isDraggingFlag = false;
+            canvas.style.cursor = 'grab';
+        }
+        
+        function handleDoubleClick(e) {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            const mouseX = (e.clientX - rect.left) * scaleX;
+            const mouseY = (e.clientY - rect.top) * scaleY;
+            // 先检测边
+            const edge = findEdgeAtCoord(mouseX, mouseY);
+            if(edge && isWeighted) {
+                editEdgeWeight(edge);
+                return;
+            }
+            // 检测节点
+            for(let i=0;i<nodes.length;i++) {
+                const n = nodes[i];
+                if(Math.hypot(mouseX - n.x, mouseY - n.y) < 25) {
+                    deleteNodeById(n.id);
+                    break;
+                }
+            }
+        }
+        
+        function initCanvasEvents() {
+            canvas.addEventListener('mousedown', handleMouseDown);
+            canvas.addEventListener('mousemove', handleMouseMove);
+            canvas.addEventListener('mouseup', handleMouseUp);
+            canvas.addEventListener('dblclick', handleDoubleClick);
+            canvas.addEventListener('dragstart', (e) => e.preventDefault());
+            canvas.style.cursor = 'grab';
+        }
+        
+        function bindUI() {
+            document.getElementById('btn-add-node').onclick = () => addNodeAt(canvas.width/2, canvas.height/2);
+            document.getElementById('btn-clear').onclick = () => clearGraph();
+            document.getElementById('btn-random').onclick = () => generateRandomGraph();
+            document.getElementById('btn-parse').onclick = () => {
+                const text = graphTextarea.value;
+                const graphData = parseGraphFromText(text, isWeighted, isDirected);
+                if(graphData && graphData.nodes.length) {
+                    applyGraph(graphData);
+                } else alert("解析失败，请检查格式");
+            };
+            document.getElementById('btn-export').onclick = () => exportGraph();
+            const fileInput = document.getElementById('import-file');
+            fileInput.onchange = (e) => {
+                if(e.target.files.length) importGraphFromJson(e.target.files[0]);
+                fileInput.value = '';
+            };
+        }
+        
+        function initDemo() {
+            graphTextarea.value = `0: 1,2
+1: 0,3
+2: 0,3
+3: 1,2`;
+            const graphData = parseGraphFromText(graphTextarea.value, isWeighted, isDirected);
+            if(graphData) applyGraph(graphData);
+        }
+        
+        window.addEventListener('resize', () => resizeCanvasAndDraw());
+        bindModeSelectors();
+        bindUI();
+        initCanvasEvents();
+        initDemo();
+        setTimeout(() => resizeCanvasAndDraw(), 100);
+        updateModeHint();
+    })();
+</script>
+</body>
+</html>
