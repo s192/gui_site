@@ -5,65 +5,136 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Markdown 阅读器</title>
 <style>
+  :root {
+    --bg: #ffffff; --sidebar-bg: #f6f8fa; --text: #24292f; --muted: #57606a;
+    --border: #d0d7de; --hover: #eaeef2; --accent: #0969da; --code-bg: #f6f8fa;
+    --error: #cf222e; --input-bg: #ffffff; --toc-active: #0969da;
+  }
+  [data-theme="dark"] {
+    --bg: #0d1117; --sidebar-bg: #161b22; --text: #e6edf3; --muted: #8b949e;
+    --border: #30363d; --hover: #1f242c; --accent: #58a6ff; --code-bg: #161b22;
+    --error: #f85149; --input-bg: #0d1117; --toc-active: #58a6ff;
+  }
+
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  html, body { height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; color: #24292f; }
+  html, body { height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; color: var(--text); background: var(--bg); transition: background .2s, color .2s; }
 
   .app { display: flex; height: 100vh; }
 
-  /* 左侧栏 */
+  /* ---------- 左侧栏 ---------- */
   .sidebar {
-    width: 260px; flex-shrink: 0;
-    background: #f6f8fa; border-right: 1px solid #d0d7de;
+    width: 280px; flex-shrink: 0;
+    background: var(--sidebar-bg); border-right: 1px solid var(--border);
     display: flex; flex-direction: column;
   }
-  .sidebar h1 {
-    font-size: 15px; padding: 16px 18px; font-weight: 600;
-    border-bottom: 1px solid #d0d7de; color: #57606a;
+  .sidebar-header {
+    padding: 14px 16px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
   }
-  #fileList { list-style: none; overflow-y: auto; flex: 1; padding: 8px 0; }
+  .sidebar-header h1 { font-size: 15px; font-weight: 600; color: var(--muted); white-space: nowrap; }
+  #themeBtn {
+    background: none; border: 1px solid var(--border); color: var(--text);
+    width: 30px; height: 30px; border-radius: 6px; cursor: pointer; font-size: 15px;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  #themeBtn:hover { background: var(--hover); }
+
+  /* 搜索框 */
+  .search-box { padding: 10px 14px; border-bottom: 1px solid var(--border); }
+  .search-box input {
+    width: 100%; padding: 7px 10px; border: 1px solid var(--border); border-radius: 6px;
+    background: var(--input-bg); color: var(--text); font-size: 13px; outline: none;
+  }
+  .search-box input:focus { border-color: var(--accent); }
+  .search-count { font-size: 12px; color: var(--muted); padding: 6px 16px 0; }
+
+  #fileList { list-style: none; overflow-y: auto; flex: 1; padding: 6px 0; }
   #fileList li {
     padding: 9px 18px; cursor: pointer; font-size: 14px;
-    border-left: 3px solid transparent; color: #24292f;
+    border-left: 3px solid transparent; color: var(--text);
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
-  #fileList li:hover { background: #eaeef2; }
+  #fileList li:hover { background: var(--hover); }
   #fileList li.active {
-    background: #eaeef2; border-left-color: #0969da; font-weight: 600;
+    background: var(--hover); border-left-color: var(--accent); font-weight: 600;
   }
-  .empty-tip { padding: 16px 18px; font-size: 13px; color: #8b949e; }
+  #fileList li.hidden { display: none; }
+  .empty-tip { padding: 16px 18px; font-size: 13px; color: var(--muted); }
 
-  /* 右侧内容区 */
-  .content { flex: 1; overflow-y: auto; padding: 32px 48px; }
-  #welcome { color: #57606a; font-size: 15px; margin-top: 20vh; text-align: center; }
-  #welcome code {
-    background: #f6f8fa; padding: 2px 6px; border-radius: 4px; font-size: 13px;
-  }
-  .error { color: #cf222e; }
+  /* ---------- 右侧内容区 ---------- */
+  .content { flex: 1; overflow-y: auto; padding: 36px 48px; scroll-behavior: smooth; }
+  #welcome { color: var(--muted); font-size: 15px; margin-top: 20vh; text-align: center; line-height: 1.8; }
+  #welcome code { background: var(--code-bg); padding: 2px 6px; border-radius: 4px; font-size: 13px; }
+  .error { color: var(--error); }
 
-  /* Markdown 渲染样式 */
+  /* ---------- Markdown 渲染样式 ---------- */
   .md { line-height: 1.7; font-size: 15px; max-width: 860px; margin: 0 auto; }
-  .md h1, .md h2 { border-bottom: 1px solid #d0d7de; padding-bottom: .3em; margin: 1em 0 .6em; }
+  .md h1, .md h2 { border-bottom: 1px solid var(--border); padding-bottom: .3em; margin: 1em 0 .6em; }
   .md h1:first-child { margin-top: 0; }
-  .md h1, .md h2, .md h3 { line-height: 1.25; }
+  .md h2, .md h3, .md h4 { scroll-margin-top: 20px; }
+  .md h1, .md h2, .md h3, .md h4 { line-height: 1.25; }
   .md p, .md ul, .md ol { margin: .6em 0; }
   .md ul, .md ol { padding-left: 2em; }
-  .md code { background: rgba(175,184,193,.2); padding: .2em .4em; border-radius: 6px; font-size: 85%; font-family: ui-monospace, monospace; }
-  .md pre { background: #f6f8fa; padding: 16px; border-radius: 8px; overflow-x: auto; margin: .8em 0; }
+  .md code { background: var(--code-bg); padding: .2em .4em; border-radius: 6px; font-size: 85%; font-family: ui-monospace, monospace; }
+  .md pre { background: var(--code-bg); padding: 16px; border-radius: 8px; overflow-x: auto; margin: .8em 0; border: 1px solid var(--border); }
   .md pre code { background: none; padding: 0; }
-  .md blockquote { color: #57606a; border-left: .25em solid #d0d7de; padding: 0 1em; margin: .8em 0; }
-  .md a { color: #0969da; text-decoration: none; }
+  .md blockquote { color: var(--muted); border-left: .25em solid var(--border); padding: 0 1em; margin: .8em 0; }
+  .md a { color: var(--accent); text-decoration: none; }
   .md a:hover { text-decoration: underline; }
   .md table { border-collapse: collapse; margin: .8em 0; }
-  .md th, .md td { border: 1px solid #d0d7de; padding: 6px 13px; }
+  .md th, .md td { border: 1px solid var(--border); padding: 6px 13px; }
   .md img { max-width: 100%; }
-  .md hr { border: 0; border-top: 1px solid #d0d7de; margin: 1.5em 0; }
+  .md hr { border: 0; border-top: 1px solid var(--border); margin: 1.5em 0; }
+  .md .md-img-wrapper { text-align: center; margin: 1em 0; }
+  .md .md-img-wrapper img { cursor: zoom-in; }
+  /* 图片点击放大遮罩 */
+  .img-lightbox {
+    position: fixed; inset: 0; background: rgba(0,0,0,.75); display: flex;
+    align-items: center; justify-content: center; z-index: 999; cursor: zoom-out;
+  }
+  .img-lightbox img { max-width: 92vw; max-height: 92vh; }
+
+  /* ---------- TOC 悬浮目录 ---------- */
+  .toc {
+    position: fixed; right: 0; top: 0; height: 100vh; width: 240px;
+    background: var(--sidebar-bg); border-left: 1px solid var(--border);
+    display: flex; flex-direction: column; font-size: 13px;
+  }
+  .toc-header {
+    padding: 14px 16px; font-weight: 600; color: var(--muted);
+    border-bottom: 1px solid var(--border); flex-shrink: 0;
+  }
+  .toc-body { flex: 1; overflow-y: auto; padding: 10px 8px; }
+  .toc-item {
+    display: block; padding: 4px 10px; color: var(--muted); text-decoration: none;
+    border-left: 2px solid transparent; overflow: hidden; text-overflow: ellipsis;
+    white-space: nowrap; line-height: 1.5;
+  }
+  .toc-item:hover { color: var(--text); }
+  .toc-item.active { color: var(--toc-active); border-left-color: var(--toc-active); font-weight: 600; }
+  .toc-item.lv3 { padding-left: 22px; }
+  .toc-item.lv4 { padding-left: 34px; }
+  .toc-empty { padding: 12px 16px; color: var(--muted); font-size: 12px; }
+  /* 内容区给 TOC 留出右侧空间 */
+  .content { margin-right: 240px; }
+  @media (max-width: 900px) {
+    .toc { display: none; }
+    .content { margin-right: 0; padding: 24px; }
+  }
 </style>
 </head>
 <body>
 <div class="app">
-  <!-- 左侧：文件列表 -->
+  <!-- 左侧：文件列表 + 搜索 + 主题切换 -->
   <aside class="sidebar">
-    <h1>📄 Markdown 文件</h1>
+    <div class="sidebar-header">
+      <h1>📄 Markdown 文件</h1>
+      <button id="themeBtn" title="切换主题">🌙</button>
+    </div>
+    <div class="search-box">
+      <input id="searchInput" type="text" placeholder="🔍 搜索文件…" autocomplete="off">
+    </div>
+    <div class="search-count" id="searchCount"></div>
     <ul id="fileList"></ul>
   </aside>
 
@@ -74,7 +145,14 @@
       维护文件列表：打开本页 HTML，编辑 <code>FILES</code> 数组即可。
     </div>
     <article class="md" id="article" style="display:none;"></article>
-  </div>
+  </main>
+
+  <!-- 右侧悬浮：TOC 目录 -->
+  <nav class="toc" id="toc">
+    <div class="toc-header">📑 目录</div>
+    <div class="toc-body" id="tocBody"></div>
+  </nav>
+</div>
 
 <script>
   /**
@@ -83,32 +161,103 @@
    * file : 对应的 .md 文件路径（相对本 HTML 文件的位置）
    */
   const FILES = [
-    { title: "复赛注意事项", file: "docs/semifinal-tips.md" },
-    //{ title: "项目介绍",        file: "docs/项目介绍.md" },
-    //{ title: "开发笔记",        file: "docs/开发笔记.md" },
+    { title: "欢迎 / 使用说明", file: "docs/欢迎.md" },
+    { title: "项目介绍",        file: "docs/项目介绍.md" },
+    { title: "开发笔记",        file: "docs/开发笔记.md" },
     // 在此继续添加更多文件...
   ];
 
-  const listEl   = document.getElementById('fileList');
-  const article  = document.getElementById('article');
-  const welcome  = document.getElementById('welcome');
+  const listEl      = document.getElementById('fileList');
+  const article     = document.getElementById('article');
+  const welcome     = document.getElementById('welcome');
+  const searchInput = document.getElementById('searchInput');
+  const searchCount = document.getElementById('searchCount');
+  const tocBody     = document.getElementById('tocBody');
+  const themeBtn    = document.getElementById('themeBtn');
 
-  // ---- 自包含的轻量 Markdown -> HTML 解析器（支持常用语法，无需 CDN）----
+  // ==================== 主题切换 ====================
+  const THEME_KEY = 'md-reader-theme';
+  function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    themeBtn.textContent = theme === 'dark' ? '☀️' : '🌙';
+    themeBtn.title = theme === 'dark' ? '切换到亮色' : '切换到暗色';
+  }
+  // 优先级：本地记忆 > 系统偏好 > 默认亮色
+  const savedTheme = localStorage.getItem(THEME_KEY);
+  const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  applyTheme(savedTheme || (systemDark ? 'dark' : 'light'));
+  themeBtn.addEventListener('click', () => {
+    const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    applyTheme(next);
+    localStorage.setItem(THEME_KEY, next);
+  });
+
+  // ==================== Markdown 解析器 ====================
   function escapeHtml(s) {
     return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
+  let refmap = {};
+  // 标题 slug 计数（处理重复标题）
+  let slugCount = {};
+
   function inline(s) {
     return s
-      .replace(/`([^`]+)`/g, '<code>$1</code>')             // 行内代码
-      .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')    // 粗体
-      .replace(/\*([^*]+)\*/g, '<em>$1</em>')               // 斜体
-      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>'); // 链接
+      .replace(/`([^`]+)`/g, '<code>$1</code>')
+      .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+      .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1">')
+      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>')
+      .replace(/!\[([^\]]*)\]\[([^\]]*)\]/g, (_, alt, id) => {
+        const url = refmap[id.toLowerCase()];
+        return url ? `<img src="${url}" alt="${escapeHtml(alt)}">` : `<code>![${escapeHtml(alt)}][${escapeHtml(id)}]</code>`;
+      })
+      .replace(/\[([^\]]+)\]\[([^\]]*)\]/g, (_, text, id) => {
+        const key = id.toLowerCase();
+        if (refmap.hasOwnProperty(key)) return `<a href="${refmap[key]}">${text}</a>`;
+        return `<code>[${text}][${escapeHtml(id)}]</code>`;
+      });
   }
+
+  // 生成安全的 URL id（中文保留、空格转 -、去标点、重复加序号）
+  function makeSlug(text) {
+    let slug = text
+      .toLowerCase()
+      .replace(/[`*_~]/g, '')                       // 去掉行内标记残留
+      .replace(/[^\w\u4e00-\u9fa5一-龥\s-]/g, '')    // 保留字母数字中文空格连字符
+      .trim()
+      .replace(/\s+/g, '-');
+    if (!slug) slug = 'heading';
+    const n = (slugCount[slug] = (slugCount[slug] || 0) + 1);
+    return n > 1 ? slug + '-' + n : slug;
+  }
+
   function md2html(md) {
     const lines = md.split(/\r?\n/);
     let html = '', inList = false, inCode = false, codeBuf = '';
-    const closeList = () => { if (inList) { html += '</ul>'; inList = false; } };
+    refmap = {};
+    slugCount = {};
 
+    // ① 预扫描收集 [id]: url 定义（支持 data URI 跨行续接）
+    let i = 0;
+    while (i < lines.length) {
+      let m = lines[i].match(/^\s*\[([^\]]+)\]:\s*(.+)$/);
+      if (m) {
+        let url = m[2].trim().replace(/^<(.+)>$/, '$1');
+        let j = i + 1;
+        while (j < lines.length && lines[j].trim() !== '' &&
+               !/^(#{1,6}\s|>\s|```|[-*+]\s|\[\w+\]:)/.test(lines[j]) &&
+               !/^\s*\[([^\]]+)\]:/.test(lines[j])) {
+          url += lines[j].trim();
+          j++;
+        }
+        refmap[m[1].toLowerCase()] = url;
+        i = j;
+        continue;
+      }
+      i++;
+    }
+
+    const closeList = () => { if (inList) { html += '</ul>'; inList = false; } };
     const flushCode = () => {
       if (inCode) {
         html += '<pre><code>' + escapeHtml(codeBuf.replace(/\n$/,'')) + '</code></pre>';
@@ -118,84 +267,169 @@
 
     for (let raw of lines) {
       const line = raw;
-      // 代码块 ```
       if (/^```/.test(line.trim())) {
         if (inCode) { flushCode(); continue; }
         else { inCode = true; continue; }
       }
       if (inCode) { codeBuf += line + '\n'; continue; }
 
-      // 标题
-      let m = line.match(/^(#{1,6})\s+(.*)$/);
-      if (m) { closeList(); html += `<h${m[1].length}>${inline(escapeHtml(m[2]))}</h${m[1].length}>`; continue; }
-      // 引用
-      if ((m = line.match(/^>\s?(.*)$/))) { closeList(); html += `<blockquote>${inline(escapeHtml(m[1]))}</blockquote>`; continue; }
-      // 水平线
-      if (/^\s*([-*_])\1{2,}\s*$/.test(line)) { closeList(); html += '<hr>'; continue; }
-      // 无序列表
-      if ((m = line.match(/^\s*[-*+]\s+(.*)$/))) {
-        if (!inList) { html += '<ul>'; inList = true; }
-        html += `<li>${inline(escapeHtml(m[1]))}</li>`; continue;
+      let m;
+      // 标题（带 id，供 TOC 定位）
+      if ((m = line.match(/^(#{1,6})\s+(.*)$/))) {
+        closeList();
+        const level = m[1].length;
+        const text = m[2].trim();
+        const id = makeSlug(text);
+        html += `<h${level} id="${id}">${inline(escapeHtml(text))}</h${level}>`;
+        continue;
       }
-      // 任务列表
+      if ((m = line.match(/^>\s?(.*)$/))) { closeList(); html += `<blockquote>${inline(escapeHtml(m[1]))}</blockquote>`; continue; }
+      if (/^\s*([-*_])\1{2,}\s*$/.test(line)) { closeList(); html += '<hr>'; continue; }
       if ((m = line.match(/^\s*[-*+]\s+\[( |x)\]\s+(.*)$/i))) {
         if (!inList) { html += '<ul class="task">'; inList = true; }
         html += `<li>${m[1]==='x'?'✅':'⬜'} ${inline(escapeHtml(m[2]))}</li>`; continue;
       }
-      // 空行
+      if ((m = line.match(/^\s*[-*+]\s+(.*)$/))) {
+        if (!inList) { html += '<ul>'; inList = true; }
+        html += `<li>${inline(escapeHtml(m[1]))}</li>`; continue;
+      }
       if (line.trim() === '') { closeList(); continue; }
-      // 普通段落
+      if (/^\s*\[([^\]]+)\]:/.test(line)) continue; // 引用式定义行，已预扫描
       closeList();
       html += `<p>${inline(escapeHtml(line))}</p>`;
     }
     flushCode(); closeList();
     return html;
   }
-  // ----------------------------------------------------------------------
 
-  // 渲染文件列表
-  function renderList() {
-    if (FILES.length === 0) {
-      listEl.innerHTML = '<div class="empty-tip">列表为空，请编辑 FILES 数组添加文件。</div>';
+  // ==================== TOC 自动生成 ====================
+  function buildTOC() {
+    tocBody.innerHTML = '';
+    const headings = article.querySelectorAll('h1, h2, h3, h4');
+    if (headings.length === 0) {
+      tocBody.innerHTML = '<div class="toc-empty">本文暂无标题，无法生成目录。</div>';
       return;
     }
-    FILES.forEach((item, idx) => {
-      const li = document.createElement('li');
-      li.textContent = item.title;
-      li.dataset.file = item.file;
-      li.addEventListener('click', () => loadFile(item, li));
-      listEl.appendChild(li);
+    headings.forEach(h => {
+      const a = document.createElement('a');
+      a.href = '#' + h.id;
+      a.className = 'toc-item lv' + h.tagName.substring(1);
+      a.textContent = h.textContent;
+      a.dataset.target = h.id;
+      a.addEventListener('click', e => {
+        e.preventDefault();
+        h.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        history.replaceState(null, '', '#' + h.id);
+      });
+      tocBody.appendChild(a);
     });
   }
 
-  // 加载并渲染 Markdown 文件
+  // 滚动时高亮当前所在章节
+  let scrollTimer = null;
+  function setupTOCScrollSpy() {
+    const content = document.querySelector('.content');
+    content.removeEventListener('scroll', onScroll);
+    content.addEventListener('scroll', onScroll);
+  }
+  function onScroll() {
+    if (scrollTimer) cancelAnimationFrame(scrollTimer);
+    scrollTimer = requestAnimationFrame(() => {
+      const headings = article.querySelectorAll('h1, h2, h3, h4');
+      let current = null;
+      // 找出视口内最后一个「顶部已过」的标题
+      headings.forEach(h => {
+        if (h.getBoundingClientRect().top - 80 <= 0) current = h.id;
+      });
+      document.querySelectorAll('.toc-item').forEach(el => {
+        el.classList.toggle('active', el.dataset.target === current);
+      });
+    });
+  }
+
+  // ==================== 文件列表 + 搜索 ====================
+  function renderList(filterText) {
+    listEl.innerHTML = '';
+    const q = (filterText || '').trim().toLowerCase();
+    let visible = 0;
+
+    if (FILES.length === 0) {
+      listEl.innerHTML = '<div class="empty-tip">列表为空，请编辑 FILES 数组添加文件。</div>';
+      searchCount.textContent = '';
+      return;
+    }
+
+    FILES.forEach((item, idx) => {
+      const match = !q || item.title.toLowerCase().includes(q);
+      const li = document.createElement('li');
+      li.textContent = item.title;
+      li.dataset.file = item.file;
+      if (!match) li.classList.add('hidden');
+      else visible++;
+      // 高亮当前已打开文件
+      if (decodeURIComponent(location.hash.slice(1)) === item.file) li.classList.add('active');
+      li.addEventListener('click', () => loadFile(item, li));
+      listEl.appendChild(li);
+    });
+
+    searchCount.textContent = q ? `匹配 ${visible} / ${FILES.length}` : '';
+  }
+
+  searchInput.addEventListener('input', () => renderList(searchInput.value));
+
+  // ==================== 加载文件 ====================
   async function loadFile(item, liEl) {
-    // 高亮当前项
     document.querySelectorAll('#fileList li').forEach(li => li.classList.remove('active'));
-    liEl.classList.add('active');
+    if (liEl) liEl.classList.add('active');
+    // 搜索过滤后仍可点击：确保该项可见（不清空搜索框，仅移除 hidden）
+    if (liEl) liEl.classList.remove('hidden');
 
     welcome.style.display = 'none';
     article.style.display = 'block';
     article.innerHTML = '<p>⏳ 加载中…</p>';
+    tocBody.innerHTML = '';
 
     try {
       const res = await fetch(item.file);
       if (!res.ok) throw new Error('HTTP ' + res.status + '，文件未找到');
       const md = await res.text();
       article.innerHTML = md2html(md);
-      // 更新地址栏 hash，方便分享/刷新
+      // 图片点击放大
+      bindImageZoom();
+      buildTOC();
+      setupTOCScrollSpy();
       location.hash = encodeURIComponent(item.file);
+      document.querySelector('.content').scrollTop = 0;
     } catch (err) {
       article.innerHTML =
         '<p class="error">⚠️ 无法加载文件：<b>' + item.file + '</b></p>' +
         '<p>请确认：<br>1. 该 .md 文件已放在对应路径；<br>2. 通过本地服务器（如 <code>python -m http.server</code>）打开本页面，' +
         '直接双击文件（file://）会因浏览器安全限制无法读取。</p>';
+      tocBody.innerHTML = '<div class="toc-empty">无法生成目录</div>';
       console.error(err);
     }
   }
 
-  // 初始化：有 hash 则自动打开对应文件
+  // ==================== 图片点击放大 ====================
+  function bindImageZoom() {
+    article.querySelectorAll('img').forEach(img => {
+      img.addEventListener('click', () => {
+        const overlay = document.createElement('div');
+        overlay.className = 'img-lightbox';
+        overlay.innerHTML = '<img src="' + img.src + '" alt="">';
+        overlay.addEventListener('click', () => overlay.remove());
+        document.body.appendChild(overlay);
+      });
+    });
+  }
+  // 按 Esc 关闭放大图
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') document.querySelector('.img-lightbox')?.remove();
+  });
+
+  // ==================== 初始化 ====================
   renderList();
+  // 有 hash 则自动打开对应文件
   const hash = decodeURIComponent(location.hash.slice(1));
   if (hash) {
     const match = FILES.find(f => f.file === hash);
