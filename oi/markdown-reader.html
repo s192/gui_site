@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Markdown 阅读器</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; color: #24292f; }
+
+  .app { display: flex; height: 100vh; }
+
+  /* 左侧栏 */
+  .sidebar {
+    width: 260px; flex-shrink: 0;
+    background: #f6f8fa; border-right: 1px solid #d0d7de;
+    display: flex; flex-direction: column;
+  }
+  .sidebar h1 {
+    font-size: 15px; padding: 16px 18px; font-weight: 600;
+    border-bottom: 1px solid #d0d7de; color: #57606a;
+  }
+  #fileList { list-style: none; overflow-y: auto; flex: 1; padding: 8px 0; }
+  #fileList li {
+    padding: 9px 18px; cursor: pointer; font-size: 14px;
+    border-left: 3px solid transparent; color: #24292f;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  #fileList li:hover { background: #eaeef2; }
+  #fileList li.active {
+    background: #eaeef2; border-left-color: #0969da; font-weight: 600;
+  }
+  .empty-tip { padding: 16px 18px; font-size: 13px; color: #8b949e; }
+
+  /* 右侧内容区 */
+  .content { flex: 1; overflow-y: auto; padding: 32px 48px; }
+  #welcome { color: #57606a; font-size: 15px; margin-top: 20vh; text-align: center; }
+  #welcome code {
+    background: #f6f8fa; padding: 2px 6px; border-radius: 4px; font-size: 13px;
+  }
+  .error { color: #cf222e; }
+
+  /* Markdown 渲染样式 */
+  .md { line-height: 1.7; font-size: 15px; max-width: 860px; margin: 0 auto; }
+  .md h1, .md h2 { border-bottom: 1px solid #d0d7de; padding-bottom: .3em; margin: 1em 0 .6em; }
+  .md h1:first-child { margin-top: 0; }
+  .md h1, .md h2, .md h3 { line-height: 1.25; }
+  .md p, .md ul, .md ol { margin: .6em 0; }
+  .md ul, .md ol { padding-left: 2em; }
+  .md code { background: rgba(175,184,193,.2); padding: .2em .4em; border-radius: 6px; font-size: 85%; font-family: ui-monospace, monospace; }
+  .md pre { background: #f6f8fa; padding: 16px; border-radius: 8px; overflow-x: auto; margin: .8em 0; }
+  .md pre code { background: none; padding: 0; }
+  .md blockquote { color: #57606a; border-left: .25em solid #d0d7de; padding: 0 1em; margin: .8em 0; }
+  .md a { color: #0969da; text-decoration: none; }
+  .md a:hover { text-decoration: underline; }
+  .md table { border-collapse: collapse; margin: .8em 0; }
+  .md th, .md td { border: 1px solid #d0d7de; padding: 6px 13px; }
+  .md img { max-width: 100%; }
+  .md hr { border: 0; border-top: 1px solid #d0d7de; margin: 1.5em 0; }
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- 左侧：文件列表 -->
+  <aside class="sidebar">
+    <h1>📄 Markdown 文件</h1>
+    <ul id="fileList"></ul>
+  </aside>
+
+  <!-- 右侧：内容区 -->
+  <main class="content">
+    <div id="welcome">
+      从左侧选择一个文件开始阅读。<br><br>
+      维护文件列表：打开本页 HTML，编辑 <code>FILES</code> 数组即可。
+    </div>
+    <article class="md" id="article" style="display:none;"></article>
+  </div>
+
+<script>
+  /**
+   * ✏️ 手动维护你的 Markdown 文件列表
+   * title: 侧边栏显示的名称
+   * file : 对应的 .md 文件路径（相对本 HTML 文件的位置）
+   */
+  const FILES = [
+    { title: "复赛注意事项", file: "docs/semifinal-tips.md" },
+    //{ title: "项目介绍",        file: "docs/项目介绍.md" },
+    //{ title: "开发笔记",        file: "docs/开发笔记.md" },
+    // 在此继续添加更多文件...
+  ];
+
+  const listEl   = document.getElementById('fileList');
+  const article  = document.getElementById('article');
+  const welcome  = document.getElementById('welcome');
+
+  // ---- 自包含的轻量 Markdown -> HTML 解析器（支持常用语法，无需 CDN）----
+  function escapeHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+  function inline(s) {
+    return s
+      .replace(/`([^`]+)`/g, '<code>$1</code>')             // 行内代码
+      .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')    // 粗体
+      .replace(/\*([^*]+)\*/g, '<em>$1</em>')               // 斜体
+      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>'); // 链接
+  }
+  function md2html(md) {
+    const lines = md.split(/\r?\n/);
+    let html = '', inList = false, inCode = false, codeBuf = '';
+    const closeList = () => { if (inList) { html += '</ul>'; inList = false; } };
+
+    const flushCode = () => {
+      if (inCode) {
+        html += '<pre><code>' + escapeHtml(codeBuf.replace(/\n$/,'')) + '</code></pre>';
+        codeBuf = ''; inCode = false;
+      }
+    };
+
+    for (let raw of lines) {
+      const line = raw;
+      // 代码块 ```
+      if (/^```/.test(line.trim())) {
+        if (inCode) { flushCode(); continue; }
+        else { inCode = true; continue; }
+      }
+      if (inCode) { codeBuf += line + '\n'; continue; }
+
+      // 标题
+      let m = line.match(/^(#{1,6})\s+(.*)$/);
+      if (m) { closeList(); html += `<h${m[1].length}>${inline(escapeHtml(m[2]))}</h${m[1].length}>`; continue; }
+      // 引用
+      if ((m = line.match(/^>\s?(.*)$/))) { closeList(); html += `<blockquote>${inline(escapeHtml(m[1]))}</blockquote>`; continue; }
+      // 水平线
+      if (/^\s*([-*_])\1{2,}\s*$/.test(line)) { closeList(); html += '<hr>'; continue; }
+      // 无序列表
+      if ((m = line.match(/^\s*[-*+]\s+(.*)$/))) {
+        if (!inList) { html += '<ul>'; inList = true; }
+        html += `<li>${inline(escapeHtml(m[1]))}</li>`; continue;
+      }
+      // 任务列表
+      if ((m = line.match(/^\s*[-*+]\s+\[( |x)\]\s+(.*)$/i))) {
+        if (!inList) { html += '<ul class="task">'; inList = true; }
+        html += `<li>${m[1]==='x'?'✅':'⬜'} ${inline(escapeHtml(m[2]))}</li>`; continue;
+      }
+      // 空行
+      if (line.trim() === '') { closeList(); continue; }
+      // 普通段落
+      closeList();
+      html += `<p>${inline(escapeHtml(line))}</p>`;
+    }
+    flushCode(); closeList();
+    return html;
+  }
+  // ----------------------------------------------------------------------
+
+  // 渲染文件列表
+  function renderList() {
+    if (FILES.length === 0) {
+      listEl.innerHTML = '<div class="empty-tip">列表为空，请编辑 FILES 数组添加文件。</div>';
+      return;
+    }
+    FILES.forEach((item, idx) => {
+      const li = document.createElement('li');
+      li.textContent = item.title;
+      li.dataset.file = item.file;
+      li.addEventListener('click', () => loadFile(item, li));
+      listEl.appendChild(li);
+    });
+  }
+
+  // 加载并渲染 Markdown 文件
+  async function loadFile(item, liEl) {
+    // 高亮当前项
+    document.querySelectorAll('#fileList li').forEach(li => li.classList.remove('active'));
+    liEl.classList.add('active');
+
+    welcome.style.display = 'none';
+    article.style.display = 'block';
+    article.innerHTML = '<p>⏳ 加载中…</p>';
+
+    try {
+      const res = await fetch(item.file);
+      if (!res.ok) throw new Error('HTTP ' + res.status + '，文件未找到');
+      const md = await res.text();
+      article.innerHTML = md2html(md);
+      // 更新地址栏 hash，方便分享/刷新
+      location.hash = encodeURIComponent(item.file);
+    } catch (err) {
+      article.innerHTML =
+        '<p class="error">⚠️ 无法加载文件：<b>' + item.file + '</b></p>' +
+        '<p>请确认：<br>1. 该 .md 文件已放在对应路径；<br>2. 通过本地服务器（如 <code>python -m http.server</code>）打开本页面，' +
+        '直接双击文件（file://）会因浏览器安全限制无法读取。</p>';
+      console.error(err);
+    }
+  }
+
+  // 初始化：有 hash 则自动打开对应文件
+  renderList();
+  const hash = decodeURIComponent(location.hash.slice(1));
+  if (hash) {
+    const match = FILES.find(f => f.file === hash);
+    if (match) {
+      const li = [...listEl.children].find(el => el.dataset.file === hash);
+      loadFile(match, li);
+    }
+  }
+</script>
+</body>
+</html>
