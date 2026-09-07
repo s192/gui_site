@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>极域班级 CLS 姓名编辑器</title>
+<style>
+  :root{
+    --bg:#f5f6fa; --card:#ffffff; --line:#e3e6ef; --text:#2b2f38; --muted:#8a90a2;
+    --primary:#4361ee; --primary-d:#3249c2; --ok:#16a34a; --warn:#d97706; --danger:#e11d48;
+    --add:#e7f6ee; --del:#fdecef; --mod:#fff4d6;
+    --shadow:0 1px 3px rgba(20,30,60,.08), 0 8px 24px rgba(20,30,60,.06);
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:"Segoe UI","Microsoft YaHei",system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.5;}
+  header{padding:16px 24px;background:linear-gradient(135deg,#4361ee,#6d8bff);color:#fff;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+  header h1{font-size:18px;margin:0;font-weight:600;}
+  header .sub{font-size:12px;opacity:.85;}
+  .toolbar{padding:12px 24px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;background:var(--card);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:10;}
+  .btn{border:none;border-radius:8px;padding:8px 14px;font-size:13px;cursor:pointer;font-weight:500;transition:.15s;background:#eef0f6;color:var(--text);}
+  .btn:hover{filter:brightness(.96);}
+  .btn.primary{background:var(--primary);color:#fff;}
+  .btn.primary:hover{background:var(--primary-d);}
+  .btn.ok{background:var(--ok);color:#fff;}
+  .btn.ghost{background:transparent;border:1px solid var(--line);}
+  .btn:disabled{opacity:.45;cursor:not-allowed;}
+  .stats{margin-left:auto;font-size:12px;color:var(--muted);display:flex;gap:14px;}
+  .stats b{color:var(--text);}
+  .layout{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);gap:16px;padding:16px 24px;align-items:start;}
+  @media(max-width:960px){.layout{grid-template-columns:1fr;}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);overflow:hidden;}
+  .card h2{font-size:14px;margin:0;padding:12px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;}
+  .card h2 .cnt{margin-left:auto;font-size:12px;color:var(--muted);font-weight:400;}
+  .empty-tip{margin:16px;padding:32px 24px;border:2px dashed var(--line);border-radius:10px;text-align:center;color:var(--muted);}
+  .paste-hint{font-size:12px;color:var(--primary);padding:8px 16px 0;}
+  textarea{width:calc(100% - 32px);min-height:160px;padding:12px;border:1px solid var(--line);border-radius:10px;font-family:"Consolas","Menlo",monospace;font-size:12px;resize:vertical;margin:0 16px 16px;}
+  .table-wrap{overflow:auto;max-height:62vh;}
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th,td{padding:7px 10px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap;}
+  th{position:sticky;top:0;background:#fafbff;font-weight:600;color:var(--muted);z-index:2;user-select:none;}
+  th .arrow{font-size:10px;opacity:.5;}
+  th.sorted .arrow{opacity:1;color:var(--primary);}
+  td.idx{color:var(--muted);width:40px;text-align:center;}
+  td.name input{width:100%;min-width:120px;padding:5px 8px;border:1px solid var(--line);border-radius:6px;font-size:13px;font-family:inherit;}
+  td.name input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 2px rgba(67,97,238,.15);}
+  td.ip{font-family:monospace;}
+  td.mac{font-family:monospace;color:var(--muted);}
+  .diff-line{font-family:"Consolas","Menlo",monospace;font-size:12px;padding:1px 12px;white-space:pre-wrap;word-break:break-all;}
+  .diff-line.add{background:var(--add);color:#14532d;}
+  .diff-line.del{background:var(--del);color:#9f1239;}
+  .diff-line.ctx{color:var(--muted);}
+  .diff-empty{color:var(--muted);text-align:center;padding:40px 16px;}
+  .legend{display:flex;gap:14px;font-size:12px;color:var(--muted);padding:0 16px 8px;}
+  .legend span{display:flex;align-items:center;gap:5px;}
+  .dot{width:10px;height:10px;border-radius:2px;display:inline-block;}
+  .dot.add{background:var(--add);border:1px solid #86efac;}
+  .dot.del{background:var(--del);border:1px solid #fca5ab;}
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:#1f2330;color:#fff;padding:10px 18px;border-radius:9px;font-size:13px;opacity:0;pointer-events:none;transition:.25s;z-index:99;}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+  .name-cell{display:flex;align-items:center;gap:6px;}
+  .reset-btn{border:none;background:none;color:var(--muted);cursor:pointer;font-size:12px;padding:0 2px;visibility:hidden;}
+  tr:hover .reset-btn{visibility:visible;}
+  .badge-changed{background:var(--mod);}
+  tr.flash{animation:flashBg .9s ease;}
+  @keyframes flashBg{0%{background:#fff4d6;}100%{background:transparent;}}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>📡 极域班级 CLS 姓名编辑器</h1>
+    <div class="sub">解析 / 重命名 / IP数值排序 / 还原原始顺序 / 差异对比 / 复制导出（.cls）</div>
+  </div>
+</header>
+
+<div class="toolbar">
+  <button class="btn primary" id="btnLoadFile">📂 打开文件</button>
+  <button class="btn" id="btnSort" title="按 address 的 IP 属性做数值排序">🔢 按 IP 数值排序</button>
+  <button class="btn" id="btnRestore" title="还原为打开文件时的原始顺序（保留已改的姓名）">↺ 还原原始顺序</button>
+  <button class="btn" id="btnReset">↺ 重置全部</button>
+  <button class="btn ok" id="btnDownload">💾 导出 .cls</button>
+  <button class="btn" id="btnCopy">📋 复制文本</button>
+  <button class="btn ghost" id="btnToggleDiff">🔍 切换差异视图</button>
+  <input type="file" id="fileInput" accept=".cls,.xml,.txt,.classmodel" style="display:none">
+  <div class="stats">
+    <span>学生 <b id="statCount">0</b></span>
+    <span>已修改 <b id="statMod">0</b></span>
+    <span class="sort-state" id="statSort">未排序</span>
+  </div>
+</div>
+
+<div class="layout">
+  <!-- 左：编辑/差异 -->
+  <div class="card">
+    <h2 id="leftTitle">📝 编辑 <span class="cnt" id="leftCnt"></span></h2>
+    <div id="emptyTip" class="empty-tip">👉 点击左上「📂 打开文件」选择 .cls 文件开始</div>
+    <div id="editArea" style="display:none">
+      <div class="paste-hint">💡 粘贴技巧：从 Excel 复制多行姓名后，点进任意一个「名称」格 Ctrl+V，第一行留在当前格，其余自动依次填入下方各行。</div>
+      <div class="legend">
+        <span><i class="dot add"></i>新增/改动行</span>
+      </div>
+      <div class="table-wrap">
+        <table id="tbl">
+          <thead>
+            <tr>
+              <th class="idx">#</th>
+              <th data-key="name">名称</th>
+              <th data-key="ip" class="sorted">IP <span class="arrow">▲</span></th>
+              <th data-key="mac">MAC</th>
+              <th data-key="x">pos x</th>
+              <th data-key="y">pos y</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- 右：导出 + 差异 -->
+  <div style="display:flex;flex-direction:column;gap:16px;">
+    <div class="card">
+      <h2>📤 导出文本 <span class="cnt">修改后 XML</span></h2>
+      <div class="legend" style="padding-top:8px;">
+        <span><i class="dot add"></i>新增</span>
+        <span><i class="dot del"></i>删除</span>
+        <span>原始导出 → 当前导出（含名称与顺序变化）</span>
+      </div>
+      <div class="hint" style="font-size:12px;color:var(--muted);padding:0 16px 8px;">排序与名称编辑会实时反映在这里，可复制或下载。</div>
+      <textarea id="outText" readonly placeholder="导出结果将显示在此…"></textarea>
+      <div style="padding:0 16px 12px;display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn ok" id="btnCopyOut">📋 复制导出文本</button>
+        <button class="btn primary" id="btnDownload2">💾 下载 .cls</button>
+        <button class="btn" id="btnPretty">切换缩进</button>
+      </div>
+    </div>
+
+    <div class="card" id="diffCard">
+      <h2>🔍 文本差异 <span class="cnt">原始导出 → 当前导出</span></h2>
+      <div id="diffBox" class="diff-empty">尚未生成差异</div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+  let ORIGINAL = "";        // 上传的原始文本
+  let students = [];        // [{name, ip, mac, x, y, origName}]
+  let origOrder = [];       // 原始文档顺序的 IP 序列（用于还原）
+  let sorted = false;
+  let pretty = true;
+  let showDiff = true;
+  const IPV4 = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/;
+
+  // ---------- 工具 ----------
+  const $ = id => document.getElementById(id);
+  function toast(msg){const t=$("toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),1800);}
+  function ipToInt(ip){const m=String(ip).match(IPV4);if(!m)return null;return (((+m[1])<<24)|((+m[2])<<16)|((+m[3])<<8)|(+m[4]))>>>0;}
+  function escapeXml(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+  function downloadFile(name,text){
+    const blob=new Blob([text],{type:"application/xml;charset=utf-8"});
+    const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;
+    document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(a.href);
+  }
+  // 根据原始文件名推导导出名（沿用原名 + .cls）
+  function deriveName(file){
+    const base=(file && file.name && file.name.replace(/\.[^/.]+$/,""))||"班级1";
+    return base+".cls";
+  }
+
+  // ---------- 解析 ----------
+  function parse(xmlText){
+    const doc=new DOMParser().parseFromString(xmlText,"application/xml");
+    if(doc.querySelector("parsererror")){toast("❌ XML 解析失败，请检查格式");throw new Error("parsererror");}
+    const out=[];
+    doc.querySelectorAll("student").forEach((st)=>{
+      const name=(st.querySelector("name")?.textContent||"").trim();
+      const addr=st.querySelector("address");
+      const pos=st.querySelector("posThumb");
+      out.push({
+        name,name,origName:name,
+        ip:addr?.getAttribute("IP")||"",
+        mac:(addr?.getAttribute("mac")||"").toUpperCase(),
+        x:pos?.getAttribute("x")||"",
+        y:pos?.getAttribute("y")||"",
+      });
+    });
+    return out;
+  }
+
+  let currentFile = null;
+  function loadFromString(text, file){
+    ORIGINAL=text;
+    currentFile = file || null;
+    students=parse(text);
+    origOrder = students.map(s=>s.ip); // 记录原始文档顺序
+    sorted=false;
+    render();
+    buildExport();
+    baseExport = $("outText").value;   // 锚定「原始顺序 + 原始姓名」的导出文本，作为差异基准
+    toast("✅ 已解析 "+students.length+" 个学生");
+  }
+
+  // ---------- 排序（IP 数值排序，非字符串） ----------
+  function sortByIp(){
+    students=[...students].sort((a,b)=>{
+      const ai=ipToInt(a.ip), bi=ipToInt(b.ip);
+      if(ai==null && bi==null)return (a.ip+"").localeCompare(b.ip+"");
+      if(ai==null)return 1;if(bi==null)return -1;
+      return ai-bi;
+    });
+    sorted=true;
+    render();buildExport();
+    toast("🔢 已按 IP 数值排序");
+  }
+
+  // 还原为打开文件时的原始顺序（保留已修改的姓名）
+  function restoreOriginalOrder(){
+    if(!origOrder.length){toast("暂无原始顺序记录");return;}
+    const map=new Map(students.map(s=>[s.ip,s]));
+    students=origOrder.map(ip=>map.get(ip)).filter(Boolean);
+    sorted=false;
+    render();buildExport();
+    toast("↺ 已还原为原始顺序");
+  }
+
+  // ---------- 渲染表格 ----------
+  function render(){
+    const tb=$("tbody");tb.innerHTML="";
+    students.forEach((s,i)=>{
+      const changed=s.name!==s.origName;
+      const tr=document.createElement("tr");
+      tr.innerHTML=`
+        <td class="idx">${i+1}</td>
+        <td class="name">
+          <div class="name-cell">
+            <input type="text" value="${escapeXml(s.name)}" data-i="${i}" class="name-input ${changed?"badge-changed":""}">
+            <button class="reset-btn" title="恢复原名">↺</button>
+          </div>
+        </td>
+        <td class="ip">${escapeXml(s.ip)}</td>
+        <td class="mac">${escapeXml(s.mac)}</td>
+        <td>${escapeXml(s.x)}</td>
+        <td>${escapeXml(s.y)}</td>`;
+      tb.appendChild(tr);
+      const inp=tr.querySelector(".name-input");
+      inp.addEventListener("input",e=>{s.name=e.target.value;e.target.classList.toggle("badge-changed",s.name!==s.origName);updateStats();buildExport();});
+      // ---- 多行粘贴：换行溢出自动排到后面的格子 ----
+      inp.addEventListener("paste",e=>{
+        const text=e.clipboardData.getData("text");
+        if(!text || !text.includes("\n") && !text.includes("\r")) return; // 单行走默认
+        e.preventDefault();
+        const names=text.split(/\r?\n/).map(l=>l.replace(/\t.*$/,"").trim()).filter(Boolean);
+        if(!names.length) return;
+        // 从当前输入框所在行开始，依次填充后续行
+        const startIdx=students.indexOf(s);
+        const applied=Math.min(names.length, students.length-startIdx);
+        for(let k=0;k<applied;k++){
+          students[startIdx+k].name=names[k];
+        }
+        render();buildExport();
+        // 高亮被填充的行
+        [...tb.children].slice(startIdx,startIdx+applied).forEach(tr=>tr.classList.add("flash"));
+        toast(`📋 已将 ${applied} 个姓名从第 ${startIdx+1} 行开始填入`);
+      });
+      tr.querySelector(".reset-btn").addEventListener("click",()=>{s.name=s.origName;inp.value=s.origName;inp.classList.remove("badge-changed");updateStats();render();buildExport();});
+    });
+    updateStats();
+    $("editArea").style.display=students.length?"block":"none";
+    $("emptyTip").style.display=students.length?"none":"block";
+    $("leftCnt").textContent=students.length?`共 ${students.length} 条`:"";
+  }
+
+  function updateStats(){
+    $("statCount").textContent=students.length;
+    $("statMod").textContent=students.filter(s=>s.name!==s.origName).length;
+    $("statSort").textContent=sorted?"已按IP排序 ▲":"原始顺序";
+  }
+
+  // 缓存「原始顺序 + 原始姓名」下的导出文本（用于差异对比基准，避免与当前混用）
+  let baseExport = "";
+
+  // ---------- 构建导出 XML（保留原文档结构，仅替换 name + 按当前顺序重排 student） ----------
+  function buildExport(){
+    if(!ORIGINAL){$("outText").value="";return;}
+    const declMatch=ORIGINAL.match(/^\s*(<\?xml[^?]*\?>)/i);
+    const decl=declMatch?declMatch[1].trim():'<?xml version="1.0" encoding="utf-8" standalone="yes" ?>';
+
+    // 1) 从原始文本中提取：头部（<students> 之前）、每个 <student> 原始块、尾部（</students> 之后）
+    //    用正则按块切分，天然规避空白文本节点干扰，且保留原始缩进格式
+    const head=ORIGINAL.replace(/<\/students>[\s\S]*$/i,"")+"";  // 含 <students> 开头
+    const studentBlocks=[...ORIGINAL.matchAll(/<student\b[\s\S]*?<\/student>/gi)].map(m=>m[0]);
+    const tailMatch=ORIGINAL.match(/<\/students>[\s\S]*$/i);
+    const tail=tailMatch?tailMatch[0]:"";
+
+    // 建立 IP -> 原始块（按块出现顺序，首个为准；同名IP取先出现的）
+    const blockByIp=new Map();
+    studentBlocks.forEach(b=>{
+      const ipMatch=b.match(/\bIP="([^"]*)"/);
+      if(ipMatch && ipMatch[1] && !blockByIp.has(ipMatch[1])) blockByIp.set(ipMatch[1], b);
+    });
+
+    // 2) 按当前 students 顺序，重组块（顺序严格等于 students），并替换其中的 <name>
+    const indentMatch=studentBlocks[0]?studentBlocks[0].match(/^\s*/):[""];
+    const indent=indentMatch?indentMatch[0].replace(/\n/g,""):"        ";  // 原始块前导空白
+    const reordered=students.map(s=>{
+      const b=blockByIp.get(s.ip);
+      if(!b) return "";
+      // 替换 name：优先精确替换第一个 <name>，保持块内其它结构不变
+      return b.replace(/<name>([\s\S]*?)<\/name>/, "<name>"+escapeXml(s.name)+"</name>");
+    }).filter(Boolean).join("\n");
+
+    let xml=decl+"\n"+head.replace(/\s*$/,"")+"\n"+reordered+"\n"+tail.replace(/^\s*/,"");
+    if(!pretty){
+      xml=xml.replace(/\n+/g,"").replace(/>\s+</g,"><").trim();
+    }
+    $("outText").value=xml;
+    if(showDiff) renderDiff();
+  }
+
+  // ---------- 差异对比 ----------
+  // 采用「规范化文本」比较（压缩空白后再对比），彻底消除缩进/换行差异；
+  // 即使切换「格式化 / 压缩」模式，也不会产生虚假的 ±全量 差异。
+  function normalizeForDiff(text){
+    return String(text).replace(/\s+/g," ").replace(/>\s+</g,"><").trim();
+  }
+
+  function renderDiff(){
+    const box=$("diffBox");
+    const cur=$("outText").value;
+    if(!baseExport && !cur){box.className="diff-empty";box.textContent="尚未生成差异";return;}
+
+    // 规范化后再比对，聚焦「内容 / 顺序」变化，忽略格式差异
+    const a=normalizeForDiff(baseExport);
+    const b=normalizeForDiff(cur);
+    box.className="";box.innerHTML="";
+
+    if(a===b){
+      box.innerHTML=`<div class="diff-line ctx">（无差异）</div>`;
+      return;
+    }
+
+    // 基于「每行一个 <student>」做语义级增删对比，结果更直观
+    const splitRe=/<student\b[\s\S]*?<\/student>/g;
+    const aStus=[...a.matchAll(splitRe)].map(m=>m[0]);
+    const bStus=[...b.matchAll(splitRe)].map(m=>m[0]);
+    const getIp=x=>{const m=x.match(/\bIP="([^"]*)"/);return m?m[1]:"";};
+    const getName=x=>{const m=x.match(/<name>([\s\S]*?)<\/name>/);return m?m[1]:"(空)";};
+
+    let html=`<div class="diff-line ctx">对比：打开时原始导出 → 当前导出（含名称与顺序变化）</div>`;
+    let add=0,del=0,mod=0;
+    const max=Math.max(aStus.length,bStus.length);
+    for(let i=0;i<max;i++){
+      const A=aStus[i], B=bStus[i];
+      if(A===B){ continue; }
+      if(!A){ html+=`<div class="diff-line add">+ [${getIp(B)}] ${escapeXml(getName(B))}</div>`; add++; }
+      else if(!B){ html+=`<div class="diff-line del">- [${getIp(A)}] ${escapeXml(getName(A))}</div>`; del++; }
+      else{
+        const ipA=getIp(A), ipB=getIp(B);
+        if(ipA===ipB && getName(A)!==getName(B)){
+          html+=`<div class="diff-line add">~ [${ipA}] ${escapeXml(getName(A))} → ${escapeXml(getName(B))}</div>`; mod++;
+        } else{
+          html+=`<div class="diff-line del">- [${ipA}] ${escapeXml(getName(A))}</div>`; del++;
+          html+=`<div class="diff-line add">+ [${ipB}] ${escapeXml(getName(B))}</div>`; add++;
+        }
+      }
+    }
+    if(add===0 && del===0 && mod===0) html+=`<div class="diff-line ctx">（无差异）</div>`;
+    else html+=`<div class="diff-line ctx">共计 +${add} / -${del}`+(mod?` / ~${mod}`:"")+` 变化</div>`;
+    box.innerHTML=html;
+  }
+
+  // ---------- 事件 ----------
+  $("btnSort").addEventListener("click",sortByIp);
+  $("btnRestore").addEventListener("click",restoreOriginalOrder);
+  $("btnReset").addEventListener("click",()=>{if(ORIGINAL){loadFromString(ORIGINAL,currentFile);toast("↺ 已重置全部（含姓名）");}});
+  $("btnPretty").addEventListener("click",()=>{pretty=!pretty;buildExport();toast(pretty?"已切换为格式化":"已切换为压缩");});
+
+  $("btnCopy").addEventListener("click",async()=>{
+    const t=$("outText").value;if(!t){toast("暂无内容");return;}
+    try{await navigator.clipboard.writeText(t);toast("📋 已复制导出文本");}
+    catch{copyFallback(t);toast("📋 已复制（兼容模式）");}
+  });
+  $("btnCopyOut").addEventListener("click",()=>$("btnCopy").click());
+  function copyFallback(t){const ta=document.createElement("textarea");ta.value=t;ta.style.position="fixed";ta.style.opacity="0";document.body.appendChild(ta);ta.select();document.execCommand("copy");ta.remove();}
+
+  function doExport(){
+    buildExport();
+    const name=deriveName(currentFile);
+    downloadFile(name,$("outText").value);
+    toast("💾 已导出 "+name);
+  }
+  $("btnDownload").addEventListener("click",()=>{if(!students.length){toast("请先打开文件");return;}doExport();});
+  $("btnDownload2").addEventListener("click",()=>{if(!students.length){toast("请先打开文件");return;}doExport();});
+
+  $("btnToggleDiff").addEventListener("click",()=>{
+    showDiff=!showDiff;
+    $("diffCard").style.display=showDiff?"block":"none";
+    if(showDiff) renderDiff();
+  });
+
+  // 文件选择（仅按钮，无拖拽）
+  $("btnLoadFile").addEventListener("click",()=>$("fileInput").click());
+  $("fileInput").addEventListener("change",e=>{const f=e.target.files[0];if(f)readFile(f);});
+
+  function readFile(file){
+    const r=new FileReader();
+    r.onload=()=>loadFromString(r.result,file);
+    r.readAsText(file,"utf-8");
+  }
+
+  // 表头点击排序
+  $("tbl").querySelectorAll("th[data-key]").forEach(th=>{
+    th.addEventListener("click",()=>{
+      const key=th.dataset.key;
+      if(key==="ip"){sortByIp();return;}
+      if(key==="name"){students=[...students].sort((a,b)=>a.name.localeCompare(b.name));sorted=true;}
+      if(key==="mac"){students=[...students].sort((a,b)=>a.mac.localeCompare(b.mac));sorted=true;}
+      render();buildExport();
+    });
+  });
+
+  // 初始化：无内嵌数据，等待用户打开文件
+  updateStats();
+})();
+</script>
+</body>
+</html>
