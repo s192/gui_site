@@ -27,6 +27,9 @@
   .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
   .drop{border:2px dashed var(--line);border-radius:12px;padding:30px 16px;text-align:center;
     color:var(--muted);transition:.2s;cursor:pointer}
+  .file-upload{border:2px dashed var(--pri);border-radius:12px;padding:16px;text-align:center;
+    color:var(--muted);transition:.2s;cursor:pointer;margin-top:10px;background:rgba(99,102,241,.06)}
+  .file-upload.hot{border-color:var(--pri2);background:rgba(139,92,246,.16);color:#fff}
   .drop.hot{border-color:var(--pri2);background:rgba(139,92,246,.12);color:#fff}
   .drop strong{color:var(--txt);font-size:15px}
   .files{margin-top:12px;display:flex;flex-direction:column;gap:8px}
@@ -123,8 +126,21 @@
         <h2>① 设置标准答案 <span class="badge">忽略大小写</span></h2>
         <label>答案内容（清理后<b>每个字符 = 一道题</b>，如 ABCDABDDC）</label>
         <textarea id="answer" placeholder="例如：ABCDABDDC"></textarea>
+
+        <div class="file-upload" id="answerDrop">
+          <strong>📎 上传答案文件（自动解析答案 + 分值）</strong><br>
+          支持把答案按题目顺序分行书写；分值规则写在答案之后（第一个含数字的行起为分值区）<br>
+          <span style="font-size:12px">或点击选择文件（txt/csv 等文本文件）</span>
+          <input type="file" id="answerFile" accept=".txt,.csv,.md,.json,.js,.py,.html,.css,.xml,.log" style="display:none">
+        </div>
+        <div id="answerFileInfo" class="hint"></div>
+
         <div class="hint">
-          📌 空白和大小写不计入；答案 <span class="sc">A B\nC</span> 等价于 <span class="sc">ABC</span>，即 3 道题。文件里的作答同样自动去空白、归一大小写后再按位置比对。
+          📌 空白和大小写不计入；答案 <span class="sc">A B\nC</span> 等价于 <span class="sc">ABC</span>，即 3 道题。文件里的作答同样自动去空白、归一大小写后再按位置比对。<br>
+          📌 <b>答案文件格式</b>（答案只含字母）：答案行在前，分值规则在后（以第一个含数字的行划分）。<br>
+          · 分值行格式：<span class="sc">范围 分值</span>（如 <span class="sc">1-15,17 2</span>）；<br>
+          · 若分值行<b>只写一个数字</b>（不标题号），如 <span class="sc">3</span>，则该数字为<b>全部题目的默认分值</b>。<br>
+          · 规则按顺序叠加，后写的覆盖先写的；上传后会自动填充上方答案框并套用分值。
         </div>
 
         <label>每题（每个字符）满分设置</label>
@@ -195,6 +211,78 @@ function clean(s){
 // ---- 解析答案：清理后每个字符 = 一道题 ----
 function parseAnswer(){
   return clean($('#answer').value).split('');
+}
+
+// ---- 解析「答案文件」：答案（字母）+ 分值规则 ----
+// 约定（用户保证答案只含字母）：
+//   - 从第一个「含数字的行」起为分值规则区；其之前全部为答案。
+//   - 答案：所有行拼接去空白，第 N 个字符 = 第 N 题标准答案。
+//   - 分值行 `[范围] 分值`（分值=行末数字）：
+//        · 去掉行末数字后为空 -> 默认分值（不标题号），如 `3`
+//        · 否则 -> 范围 + 分值，如 `1-15,17 2`
+function parseAnswerFile(text){
+  const lines = (text || '').split(/\r?\n/);
+  const isScoreLine = l => /\d/.test(l);
+
+  // 找分值区起点（第一个含数字的行）
+  let splitAt = null;
+  lines.forEach((line, i)=>{ if (splitAt === null && isScoreLine(line.trim())) splitAt = i; });
+
+  const [ansLines, ruleLines] = splitAt === null
+    ? [lines, []]
+    : [lines.slice(0, splitAt), lines.slice(splitAt)];
+
+  // 答案：拼接去空白（保留字母原样，评分时会小写归一）
+  const answer = ansLines.join('').replace(/\s+/g, '');
+
+  const rules = [];
+  ruleLines.forEach(raw=>{
+    const line = raw.trim();
+    if (!line) return;
+    const m = line.match(/(\d+(?:\.\d+)?)\s*$/);   // 行末数字 = 分值
+    if (!m) return;
+    const val = parseFloat(m[1]);
+    const before = line.slice(0, m.index).trim();
+    rules.push(before === '' ? [null, val] : [before, val]);
+  });
+
+  return { answer, rules };
+}
+
+// ---- 应用答案文件：填充答案框 + 套用分值规则到 state.scores ----
+function applyAnswerFile(text){
+  const { answer, rules } = parseAnswerFile(text);
+  if (!answer) { alert('未在文件中解析到答案（答案应为字母）'); return false; }
+
+  // 1) 填充答案框（保留原始字母，评分时会小写归一）
+  $('#answer').value = answer;
+
+  // 2) 先同步 state.questions，并按新答案长度重置 scores（默认 1、global）
+  state.questions = parseAnswer();   // 清理后字符数组
+  const n = state.questions.length;
+  state.scores = new Array(n).fill(1);
+  state.sources = new Array(n).fill('global');
+
+  // 3) 套用分值规则
+  const rangeRules = rules.filter(([rng])=> rng !== null);
+  const firstDefault = rules.find(([rng])=> rng === null);
+  if (firstDefault) {
+    const defaultVal = firstDefault[1];
+    for (let i=0;i<n;i++){ state.scores[i] = defaultVal; state.sources[i] = 'global'; }
+  }
+  rangeRules.forEach(([rng, val])=>{
+    parseRange(rng, n).forEach(i=>{ state.scores[i] = val; state.sources[i] = 'custom'; });
+  });
+
+  // 4) 刷新字符网格 + 概览（一次性）
+  renderScoring();
+
+  // 5) 反馈解析结果
+  const info = `✅ 已解析：答案 ${answer.length} 题，分值规则 ${rules.length} 条` +
+    (firstDefault ? `（默认分值 ${firstDefault[1]}）` : '');
+  const infoEl = $('#answerFileInfo');
+  if (infoEl) infoEl.innerHTML = info;
+  return true;
 }
 
 // ---- 渲染分值设置（每个字符一个 chip）----
@@ -509,6 +597,22 @@ function csvEscape(v){
 
 // ---- 事件绑定 ----
 $('#answer').addEventListener('input', renderScoring);
+
+// 上传答案文件：读取文本后自动解析答案 + 套用分值
+const answerDrop = $('#answerDrop');
+const answerFileInput = $('#answerFile');
+answerDrop.addEventListener('click', ()=> answerFileInput.click());
+answerFileInput.addEventListener('change', e=>{
+  const f = e.target.files[0]; if (!f) return;
+  f.text().then(t=>{ applyAnswerFile(t); }).catch(err=>alert('读取文件失败：'+err));
+  answerFileInput.value = '';   // 允许再次选同一文件
+});
+['dragenter','dragover'].forEach(ev=>answerDrop.addEventListener(ev,e=>{e.preventDefault();answerDrop.classList.add('hot');}));
+['dragleave','drop'].forEach(ev=>answerDrop.addEventListener(ev,e=>{e.preventDefault();answerDrop.classList.remove('hot');}));
+answerDrop.addEventListener('drop', e=>{
+  const f = e.dataTransfer.files[0]; if (!f) return;
+  f.text().then(t=>{ applyAnswerFile(t); }).catch(err=>alert('读取文件失败：'+err));
+});
 $('#calc').onclick = calc;
 $('#clearAll').onclick = ()=>{state.files=[];renderFiles();$('#results').innerHTML='<div class="empty">暂无结果</div>';$('#rcnt').textContent='0';};
 
