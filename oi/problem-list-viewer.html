@@ -211,14 +211,16 @@
     <div class="wrap">
       <table>
         <thead><tr>
-          <th>#</th><th>题目</th><th>来源</th><th title="难度">难度 ⓘ</th><th>算法标签</th><th></th>
+          <th>#</th><th>题目</th><th>来源</th><th title="按洛谷官方难度配色：灰·红·橙·黄·绿·青·蓝·紫·黑">难度 ⓘ</th><th>算法标签</th><th></th>
         </tr></thead>
         <tbody id="tbody"></tbody>
       </table>
     </div>
     <div class="state" id="state"></div>
     <div class="foot">
-      点击题名或右侧 ↗ 在新标签页打开原题 · 无链接题目为内部题 / 线下题，可查看备注说明
+      点击题名或右侧 ↗ 在新标签页打开原题 · 无链接题目为内部题 / 线下题，可查看备注说明 ·
+      题单清单在 HTML 顶部 <code>SETS</code> 数组中手动维护（只写 json 文件名）。
+      <div id="baseInfo" style="margin-top:4px;color:#7f8ca5"></div>
     </div>
   </main>
 </div>
