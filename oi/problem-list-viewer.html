@@ -122,16 +122,20 @@
   .s-HDU{background:rgba(168,85,247,.14);color:#c79bff;border:1px solid rgba(168,85,247,.32)}
   .s-SPOJ{background:rgba(236,72,153,.14);color:#ff9ecd;border:1px solid rgba(236,72,153,.32)}
   .s-其他,.s-内部题{background:rgba(148,163,184,.13);color:#b3bfd1;border:1px solid rgba(148,163,184,.3)}
+  /* 难度徽章：一律使用洛谷官方难度色（灰/红/橙/黄/绿/青/蓝/紫/黑） */
   .diff{border-radius:7px;padding:3px 9px;font-size:12px;font-weight:600;white-space:nowrap;
-        background:rgba(148,163,184,.13);color:#b6c2d4}
-  .d0{background:rgba(148,163,184,.14);color:#aab6c9}
-  .d2{background:rgba(16,185,129,.14);color:#5fd6a8}
-  .d3{background:rgba(6,182,212,.14);color:#5ecfe4}
-  .d4{background:rgba(59,130,246,.16);color:#7fb0ff}
-  .d5{background:rgba(139,92,246,.16);color:#b79bff}
-  .d6{background:rgba(249,115,22,.16);color:#ffab6b}
-  .d7{background:rgba(239,68,68,.16);color:#ff8f8f}
-  .d8{background:rgba(220,38,38,.22);color:#ff6b6b}
+        border:1px solid transparent;display:inline-flex;align-items:center;gap:5px}
+  .diff i{width:7px;height:7px;border-radius:50%;background:currentColor;flex:0 0 7px}
+  .diff[data-d="0"]{color:#BFBFBF;background:rgba(191,191,191,.14);border-color:rgba(191,191,191,.34)} /* 暂无评定 */
+  .diff[data-d="1"]{color:#FE4C61;background:rgba(254,76,97,.15); border-color:rgba(254,76,97,.38)}   /* 入门 红 */
+  .diff[data-d="2"]{color:#F39C11;background:rgba(243,156,17,.15);border-color:rgba(243,156,17,.38)}  /* 普及- 橙 */
+  .diff[data-d="3"]{color:#FFC116;background:rgba(255,193,22,.15);border-color:rgba(255,193,22,.38)}  /* 普及 黄 */
+  .diff[data-d="4"]{color:#52C41A;background:rgba(82,196,26,.15); border-color:rgba(82,196,26,.38)}   /* 普及+/提高- 绿 */
+  .diff[data-d="5"]{color:#13C2C2;background:rgba(19,194,194,.15);border-color:rgba(19,194,194,.38)}  /* 提高 青 */
+  .diff[data-d="6"]{color:#3498DB;background:rgba(52,152,219,.15);border-color:rgba(52,152,219,.38)}  /* 提高+/省选- 蓝 */
+  .diff[data-d="7"]{color:#9D3DCF;background:rgba(157,61,207,.16);border-color:rgba(157,61,207,.4)}   /* 省选/NOI- 紫 */
+  /* 黑题官方色 #0E1D69 在深色底上几乎不可见，故以官方色作底、浅色文字，保留"黑题"观感 */
+  .diff[data-d="8"]{color:#e8edfb;background:#0E1D69;border-color:#4a63c8}                             /* NOI/NOI+/CTS 黑 */
   .tag{display:inline-block;background:#141c2c;border:1px solid var(--line);color:#9fb0cc;
        border-radius:6px;padding:2px 7px;font-size:11.5px;margin:2px 4px 2px 0}
   .go{color:var(--dim);font-size:16px;text-decoration:none}
@@ -207,16 +211,14 @@
     <div class="wrap">
       <table>
         <thead><tr>
-          <th>#</th><th>题目</th><th>来源</th><th>难度</th><th>算法标签</th><th></th>
+          <th>#</th><th>题目</th><th>来源</th><th title="难度">难度 ⓘ</th><th>算法标签</th><th></th>
         </tr></thead>
         <tbody id="tbody"></tbody>
       </table>
     </div>
     <div class="state" id="state"></div>
     <div class="foot">
-      点击题名或右侧 ↗ 在新标签页打开原题 · 无链接题目为内部题 / 线下题，可查看备注说明 ·
-      题单清单在 HTML 顶部 <code>SETS</code> 数组中手动维护（只写 json 文件名）。
-      <div id="baseInfo" style="margin-top:4px;color:#7f8ca5"></div>
+      点击题名或右侧 ↗ 在新标签页打开原题 · 无链接题目为内部题 / 线下题，可查看备注说明
     </div>
   </main>
 </div>
@@ -279,8 +281,8 @@ function jsonURL(item){
   return BASE_DIR + encodeURI(f);
 }
 
+/* 洛谷难度体系（2026 版，共 9 档）；颜色见 CSS 中的 .diff[data-d="n"] */
 const DIFF_NAME = ['暂无评定','入门','普及-','普及','普及+/提高-','提高','提高+/省选-','省选/NOI-','NOI/NOI+/CTS'];
-const DIFF_CLS  = ['d0','d1','d2','d3','d4','d5','d6','d7','d8'];
 const SRC_ORDER = ['洛谷','AtCoder','CF','力扣','HDU','SPOJ','内部题','其他'];
 
 let cur = 0, curSrc = '全部', curData = null;
@@ -559,9 +561,10 @@ function renderTable(){
     const title = p.url
       ? '<a href="' + esc(p.url) + '" target="_blank" rel="noopener noreferrer">' + esc(p.name) + '</a>'
       : '<span class="nolink">' + esc(p.name) + ' <span class="pid">（无公开链接）</span></span>';
+    const dn = p.diffName || (p.diff != null ? DIFF_NAME[p.diff] : '') || '';
     const diffHtml = p.diff == null
       ? '<span style="color:#6b7891">—</span>'
-      : '<span class="diff ' + (DIFF_CLS[p.diff] || 'd0') + '">' + esc(p.diffName || DIFF_NAME[p.diff] || '') + '</span>';
+      : '<span class="diff" data-d="' + p.diff + '" title="洛谷难度：' + esc(dn) + '"><i></i>' + esc(dn) + '</span>';
     const tags = (p.algs && p.algs.length)
       ? p.algs.map(a => '<span class="tag">' + esc(a) + '</span>').join('')
       : '<span style="color:#6b7891">—</span>';
