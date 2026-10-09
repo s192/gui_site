@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>题单管理器 · 离线版（洛谷难度）</title>
+<style>
+:root{
+  --bg:#f5f6f8; --panel:#ffffff; --panel-2:#fafbfc; --text:#1f2328; --muted:#6b7280;
+  --border:#e3e6ea; --border-2:#d0d5dd; --accent:#2563eb; --accent-soft:#eff6ff;
+  --danger:#dc2626; --chip:#f1f3f5; --shadow:0 1px 2px rgba(16,24,40,.06),0 1px 3px rgba(16,24,40,.08);
+}
+body.dark{
+  --bg:#14161a; --panel:#1b1e24; --panel-2:#20242b; --text:#e6e8eb; --muted:#9aa2ae;
+  --border:#2c313a; --border-2:#3a414c; --accent:#60a5fa; --accent-soft:#1e2a3d;
+  --danger:#f87171; --chip:#282e37; --shadow:0 1px 2px rgba(0,0,0,.3);
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0; background:var(--bg); color:var(--text);
+  font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+}
+button,input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
+a{color:var(--accent)}
+
+/* 顶栏 */
+header{
+  position:sticky; top:0; z-index:20; background:var(--panel); border-bottom:1px solid var(--border);
+  padding:10px 16px; display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+}
+.logo{font-weight:700; font-size:16px; letter-spacing:.5px}
+.logo span{color:var(--accent)}
+.spacer{flex:1}
+.saved{color:var(--muted); font-size:12px; min-width:96px; text-align:right}
+.btn{border:1px solid var(--border-2); background:var(--panel); border-radius:8px; padding:6px 11px; cursor:pointer; transition:.15s; white-space:nowrap}
+.btn:hover{background:var(--panel-2); border-color:var(--accent)}
+.btn:active{transform:translateY(1px)}
+.btn.primary{background:var(--accent); border-color:var(--accent); color:#fff}
+.btn.primary:hover{filter:brightness(1.06)}
+.btn.danger{color:var(--danger)}
+.btn.danger:hover{border-color:var(--danger); background:var(--panel-2)}
+.btn.tiny{padding:2px 7px; border-radius:6px; font-size:12px}
+
+/* 布局 */
+.layout{display:grid; grid-template-columns:236px minmax(0,1fr); gap:14px; padding:14px; align-items:start}
+@media (max-width:860px){ .layout{grid-template-columns:1fr} }
+aside,section.card{background:var(--panel); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow)}
+aside{padding:10px; position:sticky; top:64px}
+@media (max-width:860px){ aside{position:static} }
+.side-title{font-size:12px; color:var(--muted); padding:4px 6px 8px; display:flex; justify-content:space-between; align-items:center}
+.set-list{display:flex; flex-direction:column; gap:4px; max-height:52vh; overflow:auto}
+.set-item{display:flex; align-items:center; gap:6px; padding:7px 9px; border-radius:8px; cursor:pointer; border:1px solid transparent}
+.set-item:hover{background:var(--panel-2)}
+.set-item.active{background:var(--accent-soft); border-color:var(--accent); color:var(--accent); font-weight:600}
+.set-item .nm{flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.set-item .cnt{font-size:11px; color:var(--muted); font-weight:400}
+.set-item.active .cnt{color:var(--accent)}
+.del-set{border:0; background:transparent; color:var(--muted); cursor:pointer; padding:0 2px; border-radius:4px}
+.del-set:hover{color:var(--danger)}
+
+section.card{padding:14px}
+.card + .card{margin-top:14px}
+.row-inline{display:flex; gap:8px; align-items:center; flex-wrap:wrap}
+.big-input{flex:1; min-width:200px; border:1px solid transparent; background:transparent; border-radius:8px; padding:6px 8px; font-size:18px; font-weight:700}
+.big-input:hover{background:var(--panel-2)}
+.big-input:focus{outline:none; border-color:var(--accent); background:var(--panel)}
+.desc-input{width:100%; border:1px solid var(--border); background:var(--panel-2); border-radius:8px; padding:6px 8px; margin-top:6px; resize:vertical}
+.desc-input:focus{outline:none; border-color:var(--accent)}
+
+/* 难度配色（洛谷官方色，文字态做了可读性加深） */
+.dot{width:9px; height:9px; border-radius:50%; display:inline-block; flex:0 0 auto}
+.dot.d0{background:#bfbfbf} .dot.d1{background:#fe4c61} .dot.d2{background:#f39c11} .dot.d3{background:#ffc116}
+.dot.d4{background:#52c41a} .dot.d5{background:#13c2c2} .dot.d6{background:#3498db} .dot.d7{background:#9d3dcf}
+.dot.d8{background:#0e1d69}
+body.dark .dot.d0{background:#8b9099}
+body.dark .dot.d1{background:#ff6b7d}
+body.dark .dot.d2{background:#ffab3d}
+body.dark .dot.d3{background:#ffd24d}
+body.dark .dot.d4{background:#6ee04a}
+body.dark .dot.d5{background:#3ddbd9}
+body.dark .dot.d6{background:#5cb3f0}
+body.dark .dot.d7{background:#c07ce8}
+body.dark .dot.d8{background:#7d8bd6}
+select.dif.lv0{color:#8a8f98} select.dif.lv1{color:#e0374f} select.dif.lv2{color:#c97a06}
+select.dif.lv3{color:#b07d00} select.dif.lv4{color:#3f9e12} select.dif.lv5{color:#0e9a9a}
+select.dif.lv6{color:#2176c7} select.dif.lv7{color:#8a2fb8} select.dif.lv8{color:#0e1d69}
+body.dark select.dif.lv0{color:#9aa0a6} body.dark select.dif.lv1{color:#ff6b7d} body.dark select.dif.lv2{color:#ffab3d}
+body.dark select.dif.lv3{color:#ffd24d} body.dark select.dif.lv4{color:#6ee04a} body.dark select.dif.lv5{color:#3ddbd9}
+body.dark select.dif.lv6{color:#5cb3f0} body.dark select.dif.lv7{color:#c07ce8} body.dark select.dif.lv8{color:#aab5ff}
+.lvchip{color:#fff; border-color:transparent}
+.lvchip.d0{background:#bfbfbf; color:#333} .lvchip.d1{background:#fe4c61} .lvchip.d2{background:#f39c11}
+.lvchip.d3{background:#ffc116; color:#4a3600} .lvchip.d4{background:#52c41a} .lvchip.d5{background:#13c2c2}
+.lvchip.d6{background:#3498db} .lvchip.d7{background:#9d3dcf} .lvchip.d8{background:#0e1d69}
+.lvchip .n{opacity:.85}
+
+/* 统计 */
+.stats{display:flex; gap:14px; flex-wrap:wrap; align-items:center; margin-top:12px; padding-top:12px; border-top:1px dashed var(--border)}
+.stat b{font-size:18px}
+.stack{height:10px; border-radius:99px; background:var(--chip); overflow:hidden; display:flex; min-width:180px; flex:1}
+.stack > i{display:block; height:100%}
+.tag-row{display:flex; gap:6px; flex-wrap:wrap; margin-top:10px; align-items:center}
+.chip{background:var(--chip); border:1px solid var(--border); border-radius:99px; padding:2px 9px; font-size:12px; cursor:pointer; display:inline-flex; align-items:center; gap:5px}
+.chip:hover{border-color:var(--accent)}
+.chip.on{background:var(--accent-soft); border-color:var(--accent); color:var(--accent)}
+.chip .n{color:var(--muted); font-size:11px}
+.chip.on .n{color:var(--accent)}
+.lvchip.on{outline:2px solid var(--accent); outline-offset:1px}
+
+/* 工具条 */
+.tools{display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:10px}
+.tools input[type=search],.tools select{border:1px solid var(--border-2); background:var(--panel-2); border-radius:8px; padding:6px 9px}
+.tools input[type=search]{flex:1; min-width:150px}
+.tools input[type=search]:focus,.tools select:focus{outline:none; border-color:var(--accent)}
+
+/* 表格 */
+.grid-head,.row{
+  display:grid; grid-template-columns:38px minmax(160px,1.35fr) minmax(180px,1.3fr) minmax(160px,1.2fr) 132px 92px 92px;
+  gap:6px; align-items:start;
+}
+.grid-head{padding:6px 8px; font-size:12px; color:var(--muted); border-bottom:1px solid var(--border)}
+.tbl{max-height:64vh; overflow:auto}
+.row{padding:6px 8px; border-bottom:1px solid var(--border); border-radius:8px}
+.row:hover{background:var(--panel-2)}
+.row.dragging{opacity:.45}
+.cell{min-width:0}
+.cell input,.cell select{width:100%; border:1px solid var(--border); background:var(--panel); border-radius:7px; padding:5px 7px}
+.cell input:focus,.cell select:focus{outline:none; border-color:var(--accent); box-shadow:0 0 0 2px var(--accent-soft)}
+.difcell{display:flex; align-items:center; gap:6px}
+.difcell select{flex:1; min-width:0}
+.idx{color:var(--muted); font-size:12px; padding-top:8px; text-align:right; padding-right:4px}
+.chips{display:flex; flex-wrap:wrap; gap:4px; margin-top:4px}
+.chips .chip .x{color:var(--muted); cursor:pointer}
+.chips .chip .x:hover{color:var(--danger)}
+.ops{display:flex; gap:3px; padding-top:2px}
+.note-row{grid-column:2 / -1; padding:2px 0 4px}
+.note-row textarea{width:100%; min-height:52px; resize:vertical; border:1px solid var(--border); background:var(--panel-2); border-radius:8px; padding:6px 8px}
+.note-row textarea:focus{outline:none; border-color:var(--accent)}
+.note-row.hidden{display:none}
+.has-note{background:var(--accent-soft); border-color:var(--accent); color:var(--accent)}
+.empty{padding:36px 10px; text-align:center; color:var(--muted)}
+.foot{display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; align-items:center}
+.hint{color:var(--muted); font-size:12px}
+
+/* 弹窗 */
+.mask{position:fixed; inset:0; background:rgba(15,20,28,.5); display:none; align-items:center; justify-content:center; z-index:50; padding:16px}
+.mask.show{display:flex}
+.modal{background:var(--panel); border:1px solid var(--border); border-radius:14px; width:min(760px,100%); max-height:88vh; overflow:auto; padding:16px; box-shadow:0 12px 40px rgba(0,0,0,.25)}
+.modal h3{margin:0 0 4px}
+.modal .sub{color:var(--muted); font-size:12px; margin-bottom:12px}
+textarea.ta{width:100%; min-height:180px; border:1px solid var(--border-2); background:var(--panel-2); border-radius:10px; padding:10px; font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:13px; resize:vertical}
+textarea.ta:focus{outline:none; border-color:var(--accent)}
+.drop{border:2px dashed var(--border-2); border-radius:10px; padding:16px; text-align:center; color:var(--muted); margin-bottom:10px}
+.drop.over{border-color:var(--accent); background:var(--accent-soft); color:var(--accent)}
+.modal .foot{justify-content:flex-end}
+.modal-msg{margin-top:8px; font-size:13px}
+.modal-msg.err{color:var(--danger)} .modal-msg.ok{color:var(--accent)}
+.lvhelp{display:flex; gap:6px; flex-wrap:wrap; margin-top:8px}
+.toast{position:fixed; left:50%; bottom:26px; transform:translate(-50%,20px); background:#111827; color:#fff; padding:9px 16px; border-radius:99px; opacity:0; pointer-events:none; transition:.25s; z-index:99; font-size:13px}
+body.dark .toast{background:#e5e7eb; color:#111827}
+.toast.show{opacity:1; transform:translate(-50%,0)}
+kbd{background:var(--chip); border:1px solid var(--border-2); border-radius:4px; padding:0 4px; font-size:11px}
+code{background:var(--chip); border-radius:4px; padding:0 4px; font-size:12px}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">题单<span>管理器</span></div>
+  <button class="btn" id="btnNew">＋ 新题单</button>
+  <button class="btn" id="btnImport">导入 JSON</button>
+  <button class="btn primary" id="btnExport">导出 JSON</button>
+  <div class="spacer"></div>
+  <span class="saved" id="savedTip"></span>
+  <button class="btn" id="btnTheme" title="切换深色/浅色">🌗 主题</button>
+</header>
+
+<div class="layout">
+  <aside>
+    <div class="side-title"><span>我的题单</span><span id="setCount"></span></div>
+    <div class="set-list" id="setList"></div>
+  </aside>
+
+  <div>
+    <section class="card">
+      <div class="row-inline">
+        <input class="big-input" id="setName" placeholder="题单名称（点击可编辑）">
+      </div>
+      <textarea class="desc-input" id="setDesc" rows="2" placeholder="题单简介 / 使用说明（可选）"></textarea>
+
+      <div class="stats">
+        <div class="stat">共 <b id="stTotal">0</b> 题</div>
+        <div class="stack" id="stStack" title="难度分布"></div>
+        <div class="hint" id="stTop"></div>
+      </div>
+      <div class="tag-row" id="diffStat"></div>
+      <div class="tag-row" id="algoStat"></div>
+    </section>
+
+    <section class="card">
+      <div class="tools">
+        <input type="search" id="q" placeholder="搜索题目 / 链接 / 算法 / 备注…">
+        <select id="fDiff"></select>
+        <select id="sortBy">
+          <option value="order">自定义顺序</option>
+          <option value="name">按题名</option>
+          <option value="diff">按难度</option>
+          <option value="algo">按算法</option>
+        </select>
+        <button class="btn" id="btnAdd">＋ 添加题目</button>
+        <button class="btn" id="btnBulk">批量粘贴</button>
+      </div>
+
+      <div class="grid-head">
+        <div>#</div><div>题目名称</div><div>链接</div><div>涉及算法</div><div>难度（洛谷）</div><div>备注</div><div>操作</div>
+      </div>
+      <div class="tbl" id="tbl"></div>
+
+      <div class="foot">
+        <button class="btn" id="btnExport2">导出 JSON 文件</button>
+        <button class="btn" id="btnCopyJson">复制 JSON</button>
+        <button class="btn" id="btnMd">导出 Markdown</button>
+        <button class="btn" id="btnCsv">导出 CSV</button>
+        <button class="btn danger" id="btnClear">清空本题单</button>
+        <span class="hint"><kbd>Ctrl/⌘+S</kbd> 导出 JSON；改动自动存本地浏览器</span>
+      </div>
+    </section>
+  </div>
+</div>
+
+<!-- 导入弹窗 -->
+<div class="mask" id="maskImport">
+  <div class="modal">
+    <h3>导入题单 JSON</h3>
+    <div class="sub">支持 .json 文件（可直接拖到页面）／粘贴 JSON 文本／洛谷题单导出数据。字段名自动兼容识别，难度支持「普及+/提高-」「绿」「4」等任意写法，洛谷 <code>pid</code> 会自动补全链接。</div>
+    <div class="drop" id="drop">把 .json 文件拖到这里，或点击选择文件</div>
+    <input type="file" id="fileInput" accept=".json,application/json" hidden>
+    <textarea class="ta" id="importText" placeholder='{
+  "name": "动态规划入门",
+  "problems": [
+    {"pid":"P1048","title":"采药","difficulty":4,"algorithms":["动态规划","背包"],"note":"01 背包模板"},
+    {"name":"最长回文子串","url":"https://leetcode.cn/problems/longest-palindromic-substring/","difficulty":"普及+/提高-","algorithms":["字符串"]}
+  ]
+}'></textarea>
+    <div class="modal-msg" id="importMsg"></div>
+    <div class="lvhelp" id="lvHelp"></div>
+    <div class="foot">
+      <button class="btn" id="impCancel">取消</button>
+      <button class="btn" id="impMerge">合并到当前题单</button>
+      <button class="btn primary" id="impDo">导入（新增题单）</button>
+    </div>
+  </div>
+</div>
+
+<!-- 批量粘贴弹窗 -->
+<div class="mask" id="maskBulk">
+  <div class="modal">
+    <h3>批量粘贴题目</h3>
+    <div class="sub">每行一题，以下写法都能识别（顺序随意）：<br>
+      <code>名称 | 链接 | 算法,算法 | 难度 | 备注</code><br>
+      <code>名称 链接 算法 难度</code> ／ 纯链接 ／ Markdown 表格行 <code>| [题名](url) | 动态规划 | 绿 |</code> ／ 清单行 <code>- 题名 url</code><br>
+      难度可写：<code>普及+/提高-</code>、<code>绿</code>、<code>4</code>、<code>普及+/提高-</code> 等。</div>
+    <textarea class="ta" id="bulkText" placeholder="P1048 采药 https://www.luogu.com.cn/problem/P1048 动态规划,背包 绿 01背包模板
+最长回文子串 | https://leetcode.cn/problems/longest-palindromic-substring/ | 动态规划,字符串 | 普及+/提高- | 中心扩散更好写
+| [爬楼梯](https://leetcode.cn/problems/climbing-stairs/) | 动态规划 | 黄 |
+P3384 树链剖分 提高+/省选-"></textarea>
+    <div class="modal-msg" id="bulkMsg"></div>
+    <div class="foot">
+      <button class="btn" id="bulkCancel">取消</button>
+      <button class="btn primary" id="bulkDo">解析并追加</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+'use strict';
+
+var STORE = 'problem-set-manager/v2';
+
+/* ===== 洛谷难度体系（2026 现行版） ===== */
+var LV = [
+  { id:0, name:'暂无评定',      color:'#BFBFBF' },
+  { id:1, name:'入门',          color:'#FE4C61' },
+  { id:2, name:'普及-',         color:'#F39C11' },
+  { id:3, name:'普及',          color:'#FFC116' },
+  { id:4, name:'普及+/提高-',   color:'#52C41A' },
+  { id:5, name:'提高',          color:'#13C2C2' },
+  { id:6, name:'提高+/省选-',   color:'#3498DB' },
+  { id:7, name:'省选/NOI-',     color:'#9D3DCF' },
+  { id:8, name:'NOI/NOI+/CTS',  color:'#0E1D69' }
+];
+/* 别名：导入/批量粘贴时任意写法都能认出来 */
+var ALIAS = {
+  0: ['暂无评定','未评定','未标注','未知','无','unrated','unknown','none','null','?','-'],
+  1: ['入门','红','红题','red','entry','beginner','1'],
+  2: ['普及-','普及−','橙','橙题','orange','basic-','2'],
+  3: ['普及','普及/提高-','普及提高-','黄','黄题','yellow','basic','3'],
+  4: ['普及+/提高-','普及+/提高','普及+提高-','绿','绿题','green','basic+','4'],
+  5: ['提高','青','青题','cyan','intermediate','5'],
+  6: ['提高+/省选-','提高+/省选','蓝','蓝题','blue','6'],
+  7: ['省选/NOI-','省选/noi-','省选-','紫','紫题','purple','7'],
+  8: ['NOI/NOI+/CTS','NOI/NOI+/CTSC','noi+/ctsc','黑','黑题','black','cts','ctsc','8']
+};
+function lvName(d){ return LV[d] ? LV[d].name : '暂无评定'; }
+
+/* 返回难度 id；无法识别返回 -1 */
+function matchDiff(v){
+  if (v == null) return -1;
+  if (typeof v === 'number' && v >= 0 && v <= 8) return Math.round(v);
+  var t = String(v).trim().toLowerCase().replace(/\s+/g, '');
+  if (t === '') return -1;
+  if (/^[0-8]$/.test(t)) return +t;
+  var i, j;
+  for (i = 8; i >= 1; i--){
+    for (j = 0; j < ALIAS[i].length; j++){ if (ALIAS[i][j].toLowerCase() === t) return i; }
+  }
+  for (j = 0; j < ALIAS[0].length; j++){ if (ALIAS[0][j].toLowerCase() === t) return 0; }
+  // 兼容「简单/中等/困难」等通用分级
+  if (t === '简单' || t === 'easy') return 2;
+  if (t === '中等' || t === 'medium') return 4;
+  if (t === '困难' || t === 'hard') return 7;
+  // 包含匹配（长档优先，避免「提高+/省选-」被当成「提高」）
+  for (i = 8; i >= 1; i--){
+    for (j = 0; j < ALIAS[i].length; j++){
+      var a = ALIAS[i][j].toLowerCase();
+      if (a.length >= 2 && t.indexOf(a) >= 0) return i;
+    }
+  }
+  if (t.indexOf('cts') >= 0 || t.indexOf('noi/') >= 0 || /(^|\W)noi(\W|$)/.test(t)) return 8;
+  if (t.indexOf('省选') >= 0 || t.indexOf('紫') >= 0) return 7;
+  if (t.indexOf('蓝') >= 0) return 6;
+  if (t.indexOf('青') >= 0) return 5;
+  if (t.indexOf('绿') >= 0) return 4;
+  if (t.indexOf('黄') >= 0) return 3;
+  if (t.indexOf('橙') >= 0) return 2;
+  if (t.indexOf('红') >= 0) return 1;
+  return -1;
+}
+function normDiff(v){ var r = matchDiff(v); return r < 0 ? 0 : r; }
+
+/* ===== 通用工具 ===== */
+function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+function esc(s){
+  return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function pick(o, keys){
+  for (var i=0;i<keys.length;i++){ if (o && o[keys[i]] != null && o[keys[i]] !== '') return o[keys[i]]; }
+  return '';
+}
+function toArr(v){
+  if (v == null) return [];
+  if (Array.isArray(v)) return v.map(function(x){ return String(x).trim(); }).filter(Boolean);
+  return String(v).split(/[,，、;；\/|\s]{1,}/).map(function(s){ return s.trim(); }).filter(Boolean);
+}
+function luoguUrl(pid){ return 'https://www.luogu.com.cn/problem/' + pid; }
+function isLuogu(u){ return /^https?:\/\/(www\.)?luogu\.com\.cn\/problem\//i.test(String(u||'')); }
+function pidFromUrl(u){
+  var m = String(u||'').match(/luogu\.com\.cn\/problem\/([A-Za-z0-9_]+)/i);
+  return m ? m[1] : '';
+}
+
+function normProblem(raw){
+  var o = (raw && typeof raw === 'object') ? raw : {};
+  if (typeof raw === 'string') o = { name: raw };
+  var name = String(pick(o, ['name','title','题目','题名','名称']) || '').trim();
+  var url = String(pick(o, ['url','link','href','链接','地址']) || '').trim();
+  var pid = String(pick(o, ['pid','id','problemId','题号']) || '').trim();
+  if (!url && /^[A-Za-z]{1,3}[0-9A-Za-z_]+$/.test(pid)) url = luoguUrl(pid);
+  var nm = name || (pid && !/^https?:/i.test(pid) ? pid : '') || nameFromUrl(url) || '未命名题目';
+  return {
+    _id: uid(),
+    name: nm,
+    url: url,
+    algorithms: toArr(pick(o, ['algorithms','tags','algos','algo','算法','知识点'])),
+    difficulty: normDiff(pick(o, ['difficulty','level','diff','难度','难度等级'])),
+    note: String(pick(o, ['note','remark','comment','备注','说明','题解']) || '')
+  };
+}
+function nameFromUrl(u){
+  try{
+    var m = String(u).replace(/\/+$/,'').split('/').pop();
+    return (m || '').replace(/[-_]/g,' ').replace(/\b\w/g, function(c){ return c.toUpperCase(); }) || '';
+  }catch(e){ return ''; }
+}
+function normalizeSet(raw){
+  if (Array.isArray(raw)) return { name:'导入的题单', description:'', problems: raw.map(normProblem) };
+  var o = (raw && typeof raw === 'object') ? raw : {};
+  var arr = pick(o, ['problems','questions','list','items','problemList','data','rows','题目集合','题目列表']);
+  if (!Array.isArray(arr)) arr = [];
+  return {
+    name: String(pick(o, ['name','title','题单名称','名称']) || '未命名题单'),
+    description: String(pick(o, ['description','desc','说明','简介','描述']) || ''),
+    problems: arr.map(normProblem)
+  };
+}
+function cloneProblem(p){ return { _id:uid(), name:p.name, url:p.url, algorithms:p.algorithms.slice(), difficulty:p.difficulty, note:p.note }; }
+
+/* ===== 状态 ===== */
+var state = { sets: [], activeId: null, theme: 'light' };
+var filter = { q:'', diff:-1, algo:'', sort:'order' };
+
+function sampleSet(){
+  return {
+    id: uid(), name:'示例：动态规划 20 题', description:'双击标题即可改名；这是个示例题单，可随时删除。',
+    problems: [
+      { _id:uid(), name:'P1048 采药', url:'https://www.luogu.com.cn/problem/P1048', algorithms:['动态规划','背包 DP'], difficulty:4, note:'01 背包模板题，一维数组记得倒序枚举。' },
+      { _id:uid(), name:'最长回文子串', url:'https://leetcode.cn/problems/longest-palindromic-substring/', algorithms:['动态规划','字符串'], difficulty:4, note:'中心扩散更好写。' },
+      { _id:uid(), name:'P3384 树链剖分', url:'https://www.luogu.com.cn/problem/P3384', algorithms:['树链剖分','线段树'], difficulty:6, note:'' }
+    ]
+  };
+}
+function load(){
+  try{
+    var raw = localStorage.getItem(STORE);
+    if (raw){
+      var d = JSON.parse(raw);
+      if (d && Array.isArray(d.sets) && d.sets.length){
+        state.sets = d.sets.map(function(s){
+          return { id: s.id || uid(), name: s.name || '未命名题单', description: s.description || '',
+                   problems: (s.problems || []).map(normProblem) };
+        });
+        state.activeId = d.activeId;
+        state.theme = d.theme || 'light';
+      }
+    }
+  }catch(e){}
+  if (!state.sets.length){ var s = sampleSet(); state.sets = [s]; state.activeId = s.id; }
+  if (!getSet()) state.activeId = state.sets[0].id;
+}
+var saveTimer = null;
+function save(now){
+  if (saveTimer) clearTimeout(saveTimer);
+  var doIt = function(){
+    try{
+      localStorage.setItem(STORE, JSON.stringify({ sets: state.sets, activeId: state.activeId, theme: state.theme }));
+      var d = new Date();
+      document.getElementById('savedTip').textContent = '已保存 ' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
+    }catch(e){ toast('本地保存失败：' + e.message); }
+  };
+  if (now) doIt(); else saveTimer = setTimeout(doIt, 350);
+}
+function pad(n){ return n < 10 ? '0' + n : '' + n; }
+function getSet(){
+  for (var i=0;i<state.sets.length;i++) if (state.sets[i].id === state.activeId) return state.sets[i];
+  return null;
+}
+
+/* ===== 渲染 ===== */
+function renderAll(){ renderSide(); renderSet(); renderStats(); renderTable(); }
+
+function renderSide(){
+  document.getElementById('setList').innerHTML = state.sets.map(function(s){
+    return '<div class="set-item' + (s.id === state.activeId ? ' active' : '') + '" data-id="' + s.id + '">' +
+      '<span class="nm" title="' + esc(s.name) + '">' + esc(s.name) + '</span>' +
+      '<span class="cnt">' + s.problems.length + '</span>' +
+      '<button class="del-set" data-del="' + s.id + '" title="删除题单">✕</button></div>';
+  }).join('');
+  document.getElementById('setCount').textContent = state.sets.length + ' 个';
+}
+function renderSet(){
+  var s = getSet(); if (!s) return;
+  var nm = document.getElementById('setName'), ds = document.getElementById('setDesc');
+  if (nm.value !== s.name) nm.value = s.name;
+  if (ds.value !== (s.description || '')) ds.value = s.description || '';
+}
+function currentList(){
+  var s = getSet(); if (!s) return [];
+  var q = filter.q.trim().toLowerCase();
+  var out = s.problems.filter(function(p){
+    if (filter.diff >= 0 && p.difficulty !== filter.diff) return false;
+    if (filter.algo && p.algorithms.indexOf(filter.algo) < 0) return false;
+    if (q){
+      var hay = (p.name + ' ' + p.url + ' ' + p.algorithms.join(' ') + ' ' + p.note + ' ' + lvName(p.difficulty)).toLowerCase();
+      if (hay.indexOf(q) < 0) return false;
+    }
+    return true;
+  });
+  if (filter.sort !== 'order'){
+    out = out.slice().sort(function(a,b){
+      if (filter.sort === 'name') return a.name.localeCompare(b.name, 'zh');
+      if (filter.sort === 'diff') return (a.difficulty - b.difficulty) || a.name.localeCompare(b.name, 'zh');
+      if (filter.sort === 'algo') return (a.algorithms[0]||'zz').localeCompare(b.algorithms[0]||'zz', 'zh');
+      return 0;
+    });
+  }
+  return out;
+}
+
+function renderTable(){
+  var s = getSet(), box = document.getElementById('tbl');
+  if (!s){ box.innerHTML = '<div class="empty">左侧没有题单，点「＋ 新题单」创建。</div>'; return; }
+  var list = currentList();
+  if (!s.problems.length){ box.innerHTML = '<div class="empty">本题单还没有题目。<br>点「＋ 添加题目」，或用「批量粘贴」一次导入几十条。</div>'; return; }
+  if (!list.length){ box.innerHTML = '<div class="empty">没有符合当前筛选条件的题目。</div>'; return; }
+
+  var opts = LV.map(function(l){ return '<option value="' + l.id + '">' + l.name + '</option>'; }).join('');
+  box.innerHTML = list.map(function(p, i){
+    var chips = p.algorithms.map(function(a){
+      return '<span class="chip" data-algo="' + esc(a) + '">' + esc(a) + '<span class="x" data-rm="' + esc(a) + '" data-id="' + p._id + '">✕</span></span>';
+    }).join('');
+    return '<div class="row" data-id="' + p._id + '" draggable="true">' +
+      '<div class="cell idx">' + (i+1) + '</div>' +
+      '<div class="cell"><input data-field="name" value="' + esc(p.name) + '" placeholder="题目名称"></div>' +
+      '<div class="cell"><input data-field="url" value="' + esc(p.url) + '" placeholder="https://…">' +
+        (p.url ? ' <a class="open" href="' + esc(p.url) + '" target="_blank" rel="noopener" title="打开链接">↗</a>' : '') + '</div>' +
+      '<div class="cell"><input data-field="algorithms" value="' + esc(p.algorithms.join(', ')) + '" placeholder="逗号分隔，如 动态规划, 贪心">' +
+        (chips ? '<div class="chips">' + chips + '</div>' : '') + '</div>' +
+      '<div class="cell difcell"><span class="dot d' + p.difficulty + '" title="' + lvName(p.difficulty) + '"></span>' +
+        '<select data-field="difficulty" class="dif lv' + p.difficulty + '">' +
+          LV.map(function(l){ return '<option value="' + l.id + '"' + (p.difficulty === l.id ? ' selected' : '') + '>' + l.name + '</option>'; }).join('') +
+        '</select></div>' +
+      '<div class="cell"><button class="btn tiny' + (p.note ? ' has-note' : '') + '" data-act="note">备注</button></div>' +
+      '<div class="cell ops">' +
+        '<button class="btn tiny" data-act="up" title="上移">↑</button>' +
+        '<button class="btn tiny" data-act="down" title="下移">↓</button>' +
+        '<button class="btn tiny" data-act="dup" title="复制">⧉</button>' +
+        '<button class="btn tiny danger" data-act="del" title="删除">✕</button>' +
+      '</div>' +
+      '<div class="note-row' + (p.note ? '' : ' hidden') + '"><textarea data-field="note" placeholder="备注：思路、易错点、复盘…">' + esc(p.note) + '</textarea></div>' +
+    '</div>';
+  }).join('');
+}
+
+function renderStats(){
+  var s = getSet(); if (!s) return;
+  var total = s.problems.length;
+  document.getElementById('stTotal').textContent = total;
+
+  var cnt = {}; LV.forEach(function(l){ cnt[l.id] = 0; });
+  s.problems.forEach(function(p){ cnt[p.difficulty] = (cnt[p.difficulty] || 0) + 1; });
+
+  // 堆叠条（跳过未评定）
+  var seg = '';
+  for (var i = 1; i <= 8; i++){
+    if (!cnt[i]) continue;
+    seg += '<i style="width:' + (cnt[i] / (total || 1) * 100) + '%; background:' + LV[i].color + '" title="' + LV[i].name + ' ' + cnt[i] + ' 题"></i>';
+  }
+  if (cnt[0]) seg += '<i style="width:' + (cnt[0] / (total || 1) * 100) + '%; background:' + LV[0].color + '" title="暂无评定 ' + cnt[0] + ' 题"></i>';
+  document.getElementById('stStack').innerHTML = seg;
+
+  var rated = 0, sum = 0;
+  for (i = 1; i <= 8; i++){ rated += cnt[i]; sum += cnt[i] * i; }
+  document.getElementById('stTop').textContent = rated ? ('平均难度 ' + (sum / rated).toFixed(1) + ' · ' + lvName(Math.round(sum / rated))) : '';
+
+  document.getElementById('diffStat').innerHTML = '<span class="hint">难度分布：</span>' + LV.map(function(l){
+    return '<span class="chip lvchip d' + l.id + (filter.diff === l.id ? ' on' : '') + '" data-fdiff="' + l.id + '" title="' + l.name + '">' +
+      l.name + '<span class="n">' + (cnt[l.id] || 0) + '</span></span>';
+  }).join('');
+
+  var map = {};
+  s.problems.forEach(function(p){ p.algorithms.forEach(function(a){ map[a] = (map[a] || 0) + 1; }); });
+  var keys = Object.keys(map).sort(function(a,b){ return map[b] - map[a]; });
+  document.getElementById('algoStat').innerHTML = keys.length
+    ? '<span class="hint">算法分布：</span>' + keys.map(function(k){
+        return '<span class="chip' + (filter.algo === k ? ' on' : '') + '" data-falgo="' + esc(k) + '">' + esc(k) + '<span class="n">' + map[k] + '</span></span>';
+      }).join('')
+    : '';
+}
+
+/* ===== 行内编辑 ===== */
+var tbl = document.getElementById('tbl');
+function findProblem(id){
+  var s = getSet(); if (!s) return null;
+  for (var i=0;i<s.problems.length;i++) if (s.problems[i]._id === id) return s.problems[i];
+  return null;
+}
+tbl.addEventListener('input', function(e){
+  var f = e.target.getAttribute('data-field'); if (!f) return;
+  var row = e.target.closest('.row'); if (!row) return;
+  var p = findProblem(row.getAttribute('data-id')); if (!p) return;
+  var v = e.target.value;
+  if (f === 'algorithms'){ p.algorithms = toArr(v); renderStats(); }
+  else if (f === 'name' || f === 'url' || f === 'note'){ p[f] = v; if (f === 'name') renderStats(); }
+  if (f === 'url'){
+    var a = row.querySelector('.open');
+    if (v && /^https?:\/\//i.test(v)){
+      if (a) a.href = v;
+      else {
+        var el = document.createElement('a');
+        el.className = 'open'; el.href = v; el.target = '_blank'; el.rel = 'noopener'; el.textContent = '↗'; el.title = '打开链接';
+        e.target.parentNode.appendChild(el);
+      }
+    } else if (a) a.remove();
+  }
+  save();
+});
+tbl.addEventListener('change', function(e){
+  var f = e.target.getAttribute('data-field'); if (f !== 'difficulty') return;
+  var row = e.target.closest('.row'); var p = findProblem(row.getAttribute('data-id')); if (!p) return;
+  p.difficulty = +e.target.value;
+  e.target.className = 'dif lv' + p.difficulty;
+  var dot = row.querySelector('.dot');
+  if (dot){ dot.className = 'dot d' + p.difficulty; dot.title = lvName(p.difficulty); }
+  renderStats(); save();
+});
+tbl.addEventListener('click', function(e){
+  var t = e.target;
+  var rm = t.getAttribute && t.getAttribute('data-rm');
+  if (rm){
+    var p = findProblem(t.getAttribute('data-id')); if (!p) return;
+    p.algorithms = p.algorithms.filter(function(a){ return a !== rm; });
+    if (filter.algo === rm) filter.algo = '';
+    renderTable(); renderStats(); save(); return;
+  }
+  var fd = t.closest && t.closest('[data-fdiff]');
+  if (fd){ toggleDiff(+fd.getAttribute('data-fdiff')); return; }
+  var ch = t.closest && t.closest('[data-algo]');
+  if (ch){ toggleAlgo(ch.getAttribute('data-algo')); return; }
+  var btn = t.closest && t.closest('[data-act]'); if (!btn) return;
+  var row = btn.closest('.row'), s = getSet(), id = row.getAttribute('data-id');
+  var idx = -1; for (var i=0;i<s.problems.length;i++) if (s.problems[i]._id === id) idx = i;
+  if (idx < 0) return;
+  var act = btn.getAttribute('data-act');
+  if (act === 'note'){
+    var nr = row.querySelector('.note-row');
+    nr.classList.toggle('hidden');
+    btn.classList.toggle('has-note', !nr.classList.contains('hidden'));
+    if (!nr.classList.contains('hidden')) nr.querySelector('textarea').focus();
+    return;
+  }
+  if (act === 'up' && idx > 0) swap(idx, idx-1);
+  else if (act === 'down' && idx < s.problems.length-1) swap(idx, idx+1);
+  else if (act === 'dup'){ s.problems.splice(idx+1, 0, cloneProblem(s.problems[idx])); renderTable(); renderStats(); save(); }
+  else if (act === 'del'){
+    if (confirm('删除题目「' + s.problems[idx].name + '」？')){ s.problems.splice(idx,1); renderTable(); renderStats(); save(); }
+  }
+});
+function swap(a,b){ var s = getSet(), t = s.problems[a]; s.problems[a] = s.problems[b]; s.problems[b] = t; renderTable(); save(); }
+
+var dragId = null;
+tbl.addEventListener('dragstart', function(e){
+  var row = e.target.closest && e.target.closest('.row'); if (!row) return;
+  if (/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)){ e.preventDefault(); return; }
+  dragId = row.getAttribute('data-id'); row.classList.add('dragging');
+});
+tbl.addEventListener('dragend', function(e){
+  var row = e.target.closest && e.target.closest('.row'); if (row) row.classList.remove('dragging');
+  dragId = null;
+});
+tbl.addEventListener('dragover', function(e){ e.preventDefault(); });
+tbl.addEventListener('drop', function(e){
+  e.preventDefault();
+  var row = e.target.closest && e.target.closest('.row'); if (!row || !dragId) return;
+  var s = getSet(), to = row.getAttribute('data-id'); if (to === dragId) return;
+  var fi = -1, ti = -1;
+  for (var i=0;i<s.problems.length;i++){ if (s.problems[i]._id === dragId) fi = i; if (s.problems[i]._id === to) ti = i; }
+  if (fi < 0 || ti < 0) return;
+  s.problems.splice(ti, 0, s.problems.splice(fi,1)[0]);
+  renderTable(); save();
+});
+
+/* 统计区 chip 点击筛选 */
+function toggleDiff(d){ filter.diff = (filter.diff === d) ? -1 : d; syncDiffSelect(); renderStats(); renderTable(); }
+function toggleAlgo(k){ filter.algo = (filter.algo === k) ? '' : k; renderStats(); renderTable(); }
+document.getElementById('diffStat').addEventListener('click', function(e){
+  var el = e.target.closest && e.target.closest('[data-fdiff]');
+  if (el) toggleDiff(+el.getAttribute('data-fdiff'));
+});
+document.getElementById('algoStat').addEventListener('click', function(e){
+  var el = e.target.closest && e.target.closest('[data-falgo]');
+  if (el) toggleAlgo(el.getAttribute('data-falgo'));
+});
+
+/* ===== 题单操作 ===== */
+document.getElementById('btnNew').onclick = function(){
+  var s = { id: uid(), name:'新题单 ' + (state.sets.length + 1), description:'', problems: [] };
+  state.sets.push(s); state.activeId = s.id;
+  renderAll(); save(); toast('已创建新题单');
+};
+document.getElementById('setList').addEventListener('click', function(e){
+  var del = e.target.getAttribute && e.target.getAttribute('data-del');
+  if (del){
+    var s = null; for (var i=0;i<state.sets.length;i++) if (state.sets[i].id === del) s = state.sets[i];
+    if (s && confirm('删除题单「' + s.name + '」？不可恢复。')){
+      state.sets = state.sets.filter(function(x){ return x.id !== del; });
+      if (!state.sets.length) state.sets.push({ id: uid(), name:'新题单', description:'', problems: [] });
+      if (state.activeId === del) state.activeId = state.sets[0].id;
+      renderAll(); save();
+    }
+    return;
+  }
+  var it = e.target.closest && e.target.closest('[data-id]');
+  if (it){ state.activeId = it.getAttribute('data-id'); filter.algo = ''; filter.diff = -1; syncDiffSelect(); renderAll(); save(); }
+});
+var nameEl = document.getElementById('setName'), descEl = document.getElementById('setDesc');
+nameEl.addEventListener('input', function(){ var s = getSet(); if (!s) return; s.name = nameEl.value; renderSide(); save(); });
+descEl.addEventListener('input', function(){ var s = getSet(); if (!s) return; s.description = descEl.value; save(); });
+
+/* 筛选控件 */
+var fDiffSel = document.getElementById('fDiff');
+fDiffSel.innerHTML = '<option value="-1">全部难度</option>' + LV.map(function(l){
+  return '<option value="' + l.id + '">' + l.name + '</option>';
+}).join('');
+function syncDiffSelect(){ fDiffSel.value = String(filter.diff); }
+fDiffSel.addEventListener('change', function(e){ filter.diff = +e.target.value; renderStats(); renderTable(); });
+document.getElementById('q').addEventListener('input', function(e){ filter.q = e.target.value; renderTable(); });
+document.getElementById('sortBy').addEventListener('change', function(e){ filter.sort = e.target.value; renderTable(); });
+
+document.getElementById('btnAdd').onclick = function(){
+  var s = getSet(); if (!s) return;
+  s.problems.push({ _id: uid(), name:'', url:'', algorithms:[], difficulty:0, note:'' });
+  filter.q = ''; filter.diff = -1; filter.algo = '';
+  document.getElementById('q').value = ''; syncDiffSelect();
+  renderStats(); renderTable(); save();
+  var rows = tbl.querySelectorAll('.row');
+  if (rows.length) rows[rows.length-1].querySelector('input').focus();
+};
+
+/* ===== 导出 ===== */
+function download(name, text, mime){
+  var blob = new Blob([text], { type: mime || 'application/json;charset=utf-8' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click();
+  setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 500);
+}
+function safeName(n){ return (n || '题单').replace(/[\\\/:*?"<>|]/g, '_').trim() || '题单'; }
+function exportObj(){
+  var s = getSet(); if (!s) return null;
+  return {
+    version: 2,
+    name: s.name,
+    description: s.description || '',
+    difficultySystem: 'luogu-2026（0 暂无评定 / 1 入门 / 2 普及- / 3 普及 / 4 普及+/提高- / 5 提高 / 6 提高+/省选- / 7 省选/NOI- / 8 NOI/NOI+/CTS）',
+    exportedAt: new Date().toISOString(),
+    problems: s.problems.map(function(p){
+      var o = {};
+      var pid = pidFromUrl(p.url);
+      if (pid) o.pid = pid;
+      o.name = p.name;
+      o.url = p.url;
+      o.algorithms = p.algorithms;
+      o.difficulty = p.difficulty;
+      o.difficultyName = lvName(p.difficulty);
+      o.note = p.note;
+      return o;
+    })
+  };
+}
+function exportJson(){
+  var o = exportObj(); if (!o) return;
+  download(safeName(o.name) + '.json', JSON.stringify(o, null, 2));
+  toast('已导出 ' + o.problems.length + ' 道题');
+}
+function exportMd(){
+  var o = exportObj(); if (!o) return;
+  var lines = ['# ' + o.name, ''];
+  if (o.description) lines.push('> ' + o.description, '');
+  lines.push('| # | 题目 | 链接 | 算法 | 难度 | 备注 |');
+  lines.push('|---:|------|------|------|------|------|');
+  o.problems.forEach(function(p, i){
+    var nm = p.url ? '[' + (p.name || '未命名') + '](' + p.url + ')' : (p.name || '未命名');
+    lines.push('| ' + (i+1) + ' | ' + nm + ' | ' + (p.url || '') + ' | ' + p.algorithms.join(' / ') + ' | ' + p.difficultyName + ' | ' +
+      (p.note || '').replace(/\|/g,'\\|').replace(/\n/g,' ') + ' |');
+  });
+  download(safeName(o.name) + '.md', lines.join('\n'), 'text/markdown;charset=utf-8');
+  toast('已导出 Markdown');
+}
+function csvCell(v){
+  v = String(v == null ? '' : v);
+  return /[",\n]/.test(v) ? '"' + v.replace(/"/g,'""') + '"' : v;
+}
+function exportCsv(){
+  var o = exportObj(); if (!o) return;
+  var rows = [['题目名称','链接','算法','难度','难度值','备注']];
+  o.problems.forEach(function(p){ rows.push([p.name, p.url, p.algorithms.join(' / '), p.difficultyName, p.difficulty, p.note]); });
+  download(safeName(o.name) + '.csv', '\ufeff' + rows.map(function(r){ return r.map(csvCell).join(','); }).join('\r\n'), 'text/csv;charset=utf-8');
+  toast('已导出 CSV');
+}
+document.getElementById('btnExport').onclick = exportJson;
+document.getElementById('btnExport2').onclick = exportJson;
+document.getElementById('btnMd').onclick = exportMd;
+document.getElementById('btnCsv').onclick = exportCsv;
+document.getElementById('btnCopyJson').onclick = function(){
+  var o = exportObj(); if (!o) return;
+  copyText(JSON.stringify(o, null, 2)).then(function(){ toast('JSON 已复制到剪贴板'); }, function(){ toast('复制失败，请手动选择'); });
+};
+function copyText(t){
+  if (navigator.clipboard && window.isSecureContext) return navigator.clipboard.writeText(t);
+  return new Promise(function(res, rej){
+    var ta = document.createElement('textarea'); ta.value = t; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    try{ document.execCommand('copy'); res(); } catch(e){ rej(e); }
+    ta.remove();
+  });
+}
+document.getElementById('btnClear').onclick = function(){
+  var s = getSet(); if (!s) return;
+  if (!s.problems.length) return toast('已经是空的了');
+  if (confirm('清空「' + s.name + '」的全部 ' + s.problems.length + ' 道题？')){ s.problems = []; renderAll(); save(); toast('已清空'); }
+};
+
+/* ===== 导入 ===== */
+var maskImport = document.getElementById('maskImport');
+document.getElementById('lvHelp').innerHTML = '<span class="hint">难度对照：</span>' + LV.map(function(l){
+  return '<span class="chip lvchip d' + l.id + '">' + l.id + ' ' + l.name + '</span>';
+}).join('');
+document.getElementById('btnImport').onclick = function(){
+  document.getElementById('importMsg').textContent = '';
+  document.getElementById('importText').value = '';
+  maskImport.classList.add('show');
+};
+document.getElementById('impCancel').onclick = function(){ maskImport.classList.remove('show'); };
+maskImport.addEventListener('click', function(e){ if (e.target === maskImport) maskImport.classList.remove('show'); });
+var drop = document.getElementById('drop'), fileInput = document.getElementById('fileInput');
+drop.onclick = function(){ fileInput.click(); };
+drop.addEventListener('dragover', function(e){ e.preventDefault(); drop.classList.add('over'); });
+drop.addEventListener('dragleave', function(){ drop.classList.remove('over'); });
+drop.addEventListener('drop', function(e){
+  e.preventDefault(); drop.classList.remove('over');
+  var f = e.dataTransfer.files && e.dataTransfer.files[0]; if (f) readFile(f);
+});
+fileInput.addEventListener('change', function(e){ var f = e.target.files[0]; if (f) readFile(f); fileInput.value = ''; });
+function readFile(f){
+  var r = new FileReader();
+  r.onload = function(){
+    document.getElementById('importText').value = String(r.result || '');
+    var m = document.getElementById('importMsg'); m.className = 'modal-msg ok';
+    m.textContent = '已读取文件：' + f.name + '，点下方按钮导入。';
+  };
+  r.onerror = function(){ var m = document.getElementById('importMsg'); m.className = 'modal-msg err'; m.textContent = '文件读取失败'; };
+  r.readAsText(f, 'utf-8');
+}
+window.addEventListener('dragover', function(e){ e.preventDefault(); });
+window.addEventListener('drop', function(e){
+  if (maskImport.classList.contains('show')) return;
+  var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+  if (f && /\.json$/i.test(f.name)){
+    e.preventDefault();
+    var r = new FileReader();
+    r.onload = function(){ doImport(String(r.result || ''), 'new'); };
+    r.readAsText(f, 'utf-8');
+  }
+});
+function parseRaw(text){
+  var msg = document.getElementById('importMsg');
+  var t = String(text || '').trim();
+  if (!t){ msg.className = 'modal-msg err'; msg.textContent = '请先选择文件或粘贴 JSON 文本'; return null; }
+  try { return JSON.parse(t); }
+  catch(err){ msg.className = 'modal-msg err'; msg.textContent = 'JSON 解析失败：' + err.message; return null; }
+}
+function doImport(text, mode){
+  var data = parseRaw(text); if (!data) return;
+  var arr = Array.isArray(data) ? data : [data];
+  var n = 0;
+  arr.map(normalizeSet).forEach(function(ns){
+    if (mode === 'merge'){
+      var cur = getSet();
+      if (cur){ ns.problems.forEach(function(p){ cur.problems.push(p); n++; }); }
+      else { state.sets.push({ id: uid(), name: ns.name, description: ns.description, problems: ns.problems }); n += ns.problems.length; }
+    } else {
+      state.sets.push({ id: uid(), name: ns.name, description: ns.description, problems: ns.problems });
+      state.activeId = state.sets[state.sets.length-1].id;
+      n += ns.problems.length;
+    }
+  });
+  renderAll(); save();
+  maskImport.classList.remove('show');
+  toast('导入成功，共 ' + n + ' 道题');
+}
+document.getElementById('impDo').onclick = function(){ doImport(document.getElementById('importText').value, 'new'); };
+document.getElementById('impMerge').onclick = function(){ doImport(document.getElementById('importText').value, 'merge'); };
+
+/* ===== 批量粘贴 ===== */
+var maskBulk = document.getElementById('maskBulk');
+document.getElementById('btnBulk').onclick = function(){
+  document.getElementById('bulkMsg').textContent = '';
+  document.getElementById('bulkText').value = '';
+  maskBulk.classList.add('show');
+  document.getElementById('bulkText').focus();
+};
+document.getElementById('bulkCancel').onclick = function(){ maskBulk.classList.remove('show'); };
+maskBulk.addEventListener('click', function(e){ if (e.target === maskBulk) maskBulk.classList.remove('show'); });
+
+function parseBulkLine(line){
+  line = String(line).trim();
+  if (!line) return null;
+  line = line.replace(/^\s*[-*+]\s+/, '').replace(/^\s*\[[ xX]\]\s*/, '').replace(/^\s*\d+[.、)]\s*/, '');
+  if (!line || /^[-:|\s]+$/.test(line)) return null;
+
+  var url = '', name = '', rest = [];
+  var isUrl = function(c){ return /^https?:\/\//i.test(c); };
+  var md = line.match(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/);
+  if (md){
+    name = md[1]; url = md[2];
+    rest = line.replace(md[0], ' ').split(/[|,，\t]/).map(function(s){ return s.trim(); }).filter(Boolean);
+  } else {
+    var cells = null;
+    if (line.indexOf('\t') >= 0) cells = line.split('\t');
+    else if (line.indexOf('|') >= 0) cells = line.split('|');
+    if (cells){
+      cells = cells.map(function(s){ return s.trim(); }).filter(function(s){ return s !== ''; });
+      var urls = cells.filter(isUrl);
+      url = urls.length ? urls[0] : '';
+      var others = cells.filter(function(c){ return c !== url; });
+      name = others[0] || (url ? nameFromUrl(url) : '');
+      rest = others.slice(1);
+    } else {
+      var toks = line.split(/\s+/).filter(Boolean);
+      var ui = -1;
+      for (var k = 0; k < toks.length; k++){ if (isUrl(toks[k])){ ui = k; break; } }
+      if (ui >= 0){
+        url = toks[ui];
+        name = toks.slice(0, ui).join(' ') || nameFromUrl(url);
+        rest = toks.slice(ui + 1);
+      } else {
+        // 没有链接：找第一个难度词，前面是题名，后面是备注（额外难度词忽略）
+        var di = -1;
+        for (k = 1; k < toks.length; k++){ if (matchDiff(toks[k]) >= 0){ di = k; break; } }
+        if (di > 0){
+          name = toks.slice(0, di).join(' ');
+          rest = toks.slice(di);
+        } else {
+          name = line; rest = [];
+        }
+      }
+    }
+  }
+  if (!name) return null;
+
+  var algos = [], diff = -1, note = [], afterDiff = false;
+  rest.forEach(function(c){
+    var d = matchDiff(c);
+    if (d >= 0 && diff < 0){ diff = d; afterDiff = true; return; }
+    if (isUrl(c) && !url){ url = c; return; }
+    if (!afterDiff && !/^\d+$/.test(c)){ algos = algos.concat(toArr(c)); return; }
+    note.push(c);
+  });
+  return { name: name, url: url, algorithms: algos, difficulty: diff < 0 ? 0 : diff, note: note.join(' ') };
+}
+document.getElementById('bulkDo').onclick = function(){
+  var s = getSet(); if (!s) return;
+  var lines = document.getElementById('bulkText').value.split(/\r?\n/);
+  var got = [], skip = 0;
+  lines.forEach(function(l){
+    var p = parseBulkLine(l);
+    if (p) got.push(normProblem(p)); else if (l.trim()) skip++;
+  });
+  if (!got.length){
+    var m = document.getElementById('bulkMsg'); m.className = 'modal-msg err';
+    m.textContent = '没有解析出任何题目，请检查格式'; return;
+  }
+  got.forEach(function(p){ s.problems.push(p); });
+  renderAll(); save();
+  maskBulk.classList.remove('show');
+  toast('追加 ' + got.length + ' 道题' + (skip ? '（跳过 ' + skip + ' 行）' : ''));
+};
+
+/* ===== 主题 / 快捷键 ===== */
+document.getElementById('btnTheme').onclick = function(){
+  state.theme = state.theme === 'dark' ? 'light' : 'dark';
+  applyTheme(); save();
+};
+function applyTheme(){ document.body.classList.toggle('dark', state.theme === 'dark'); }
+window.addEventListener('keydown', function(e){
+  if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')){ e.preventDefault(); exportJson(); }
+  if (e.key === 'Escape'){ maskImport.classList.remove('show'); maskBulk.classList.remove('show'); }
+});
+var toastTimer = null;
+function toast(msg){
+  var t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(function(){ t.classList.remove('show'); }, 1900);
+}
+
+/* 启动 */
+load(); applyTheme(); renderAll();
+})();
+</script>
+</body>
+</html>

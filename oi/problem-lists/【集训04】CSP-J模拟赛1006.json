@@ -1,0 +1,88 @@
+{
+  "version": 1,
+  "name": "【集训04】CSP-J模拟赛1006",
+  "description": "copy from【集训04】CSP-J模拟赛1006",
+  "exportedAt": "2026-10-08T07:19:28.438Z",
+  "problems": [
+    {
+      "name": "括号修复repair（CF612C Replace To Make Regular Bracket Sequence）",
+      "url": "https://codeforces.com/problemset/problem/612/C",
+      "algorithms": [],
+      "difficulty": "",
+      "status": "未开始",
+      "note": ""
+    },
+    {
+      "name": "排队整理queue（CF545D​ Queue）",
+      "url": "https://codeforces.com/problemset/problem/545/D",
+      "algorithms": [],
+      "difficulty": "",
+      "status": "未开始",
+      "note": ""
+    },
+    {
+      "name": "最长正则括号子串long（CF5C Longest Regular Bracket Sequence）",
+      "url": "https://codeforces.com/problemset/problem/5/C",
+      "algorithms": [],
+      "difficulty": "",
+      "status": "未开始",
+      "note": ""
+    },
+    {
+      "name": "圆环复原circle（CF1095D Circular Dance）",
+      "url": "https://codeforces.com/problemset/problem/1095/D",
+      "algorithms": [],
+      "difficulty": "",
+      "status": "未开始",
+      "note": ""
+    },
+    {
+      "name": "删两字符del（CF1800D Remove Two Letters）",
+      "url": "https://codeforces.com/problemset/problem/1800/D",
+      "algorithms": [],
+      "difficulty": "",
+      "status": "未开始",
+      "note": ""
+    },
+    {
+      "name": "等价字符串 eq（CF559B / 560D​ Equivalent Strings（Round #313））",
+      "url": "https://codeforces.com/problemset/problem/559/B",
+      "algorithms": [],
+      "difficulty": "",
+      "status": "未开始",
+      "note": ""
+    },
+    {
+      "name": "单调栈 （P5788 【模板】单调栈）",
+      "url": "https://www.luogu.com.cn/problem/P5788",
+      "algorithms": [],
+      "difficulty": "",
+      "status": "未开始",
+      "note": ""
+    },
+    {
+      "name": "滑动窗口（P1886 【模板】单调队列 / 滑动窗口）",
+      "url": "https://www.luogu.com.cn/problem/P1886",
+      "algorithms": [],
+      "difficulty": "",
+      "status": "未开始",
+      "note": ""
+    },
+    {
+      "name": "[CSP-J 2021] 小熊的果篮",
+      "url": "https://www.luogu.com.cn/problem/P7912",
+      "algorithms": [],
+      "difficulty": "",
+      "status": "未开始",
+      "note": ""
+    },
+    {
+      "name": "多边形（CSP-J 2025 加强版）",
+      "url": "https://www.luogu.com.cn/problem/P14360",
+      "algorithms": [],
+      "difficulty": "",
+      "status": "未开始",
+      "note": "本题在2025T4基础上增加了一个k的限制，有能力的同学可以思考下如何做：\n小 R 想从中选出**不超过k根**小木棍，按任意顺序首尾相连拼成一个多边形。\n输入复制\n5 3\n1 2 3 4 5\n输出复制\n3\n输入复制\n5 5\n1 2 3 4 5\n输出复制\n9\n输入复制\n5 4\n2 2 3 8 10\n输出复制\n5"
+    }
+  ]
+}

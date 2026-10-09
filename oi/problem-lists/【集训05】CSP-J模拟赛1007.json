@@ -1,0 +1,86 @@
+{
+  "version": 1,
+  "name": "【集训05】CSP-J模拟赛1007",
+  "description": "copy from【集训05】CSP-J模拟赛1007",
+  "exportedAt": "2026-10-08T07:19:26.682Z",
+  "problems": [
+    {
+      "name": "整除调色col（CF1374D Zero Remainder Array）",
+      "url": "https://codeforces.com/problemset/problem/1374/D",
+      "algorithms": [],
+      "difficulty": "",
+      "status": "未开始",
+      "note": ""
+    },
+    {
+      "name": "板材装箱box（CF1498B Box Fitting）",
+      "url": "https://codeforces.com/problemset/problem/1498/B",
+      "algorithms": [],
+      "difficulty": "",
+      "status": "未开始",
+      "note": ""
+    },
+    {
+      "name": "区间最小值之和minsum（AT_agc005_b [AGC005B] Minimum Sum）",
+      "url": "https://atcoder.jp/contests/agc005/tasks/agc005_b",
+      "algorithms": [
+        "线段树",
+        "枚举",
+        "分治",
+        "ST表",
+        "单调栈"
+      ],
+      "difficulty": "",
+      "status": "未开始",
+      "note": ""
+    },
+    {
+      "name": "排队不快度queue",
+      "url": "https://codeforces.com/problemset/problem/92/D",
+      "algorithms": [],
+      "difficulty": "",
+      "status": "未开始",
+      "note": ""
+    },
+    {
+      "name": "区间第k大kth",
+      "url": "",
+      "algorithms": [],
+      "difficulty": "",
+      "status": "未开始",
+      "note": "清北学堂 2021.10.6 模拟赛 T1（命题人 tyytyy）"
+    },
+    {
+      "name": "木材仓库",
+      "url": "https://www.luogu.com.cn/problem/P5250",
+      "algorithms": [],
+      "difficulty": "",
+      "status": "未开始",
+      "note": ""
+    },
+    {
+      "name": "序列操作~（P8939 [DTOI 2023] B. 去年 11 月卵梦蕾简易钨丝）",
+      "url": "https://www.luogu.com.cn/problem/P8939",
+      "algorithms": [],
+      "difficulty": "",
+      "status": "未开始",
+      "note": ""
+    },
+    {
+      "name": "线段维护（P2161 [SHOI2009] 会场预约）",
+      "url": "https://www.luogu.com.cn/problem/P2161",
+      "algorithms": [],
+      "difficulty": "",
+      "status": "未开始",
+      "note": ""
+    },
+    {
+      "name": "覆盖查询（Cover query）（AT_abc435_e [ABC435E] Cover query）",
+      "url": "https://atcoder.jp/contests/abc435/tasks/abc435_e",
+      "algorithms": [],
+      "difficulty": "",
+      "status": "未开始",
+      "note": ""
+    }
+  ]
+}

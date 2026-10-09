@@ -1,0 +1,55 @@
+{
+  "version": 1,
+  "name": "【集训03】CSP-J模拟赛1005",
+  "description": "copy from",
+  "exportedAt": "2026-10-08T07:19:30.125Z",
+  "problems": [
+    {
+      "name": "回转寿司（sushi）（AT_abc382_c [ABC382C] Kaiten Sushi）",
+      "url": "https://atcoder.jp/contests/abc382/tasks/abc382_c",
+      "algorithms": [
+        "二分"
+      ],
+      "difficulty": "",
+      "status": "未开始",
+      "note": ""
+    },
+    {
+      "name": "表格贴图（sheet）（AT_abc015_4 [ABC015D] 高橋くんの苦悩）",
+      "url": "https://atcoder.jp/contests/abc015/tasks/abc015_4",
+      "algorithms": [],
+      "difficulty": "",
+      "status": "未开始",
+      "note": ""
+    },
+    {
+      "name": "表达式转换(convert)（）",
+      "url": "",
+      "algorithms": [],
+      "difficulty": "",
+      "status": "未开始",
+      "note": "输入框架​ → 洛谷 P7073 [CSP-J2020] 表达式\n中缀转前缀这个任务​ → 最接近的是 NYOJ 1498「郁闷的C小加（三）」（要求输出前缀+后缀+求值三行）和羽润 OJ #1138「中缀转前缀表达式」（同样要求记符间单空格）"
+    },
+    {
+      "name": "安全旅行（travel）（AT_abc212_e [ABC212E] Safety Journey）",
+      "url": "https://atcoder.jp/contests/abc212/tasks/abc212_e",
+      "algorithms": [
+        "DP"
+      ],
+      "difficulty": "",
+      "status": "未开始",
+      "note": ""
+    },
+    {
+      "name": "[CSP-J 2025] 多边形 / polygon",
+      "url": "https://www.luogu.com.cn/problem/P14360",
+      "algorithms": [
+        "DP",
+        "背包DP"
+      ],
+      "difficulty": "",
+      "status": "未开始",
+      "note": ""
+    }
+  ]
+}

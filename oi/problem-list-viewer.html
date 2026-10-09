@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>题单集合 · 集训题库导航</title>
+<style>
+  :root{
+    --bg:#0f1420; --card:#1a2336; --card2:#202b41;
+    --line:#2a3752; --txt:#e8edf7; --sub:#97a3ba; --dim:#6b7891;
+    --acc:#4f8cff; --acc2:#7c5cff;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:radial-gradient(1200px 600px at 15% -10%,#1c2740 0%,transparent 60%),
+               radial-gradient(900px 500px at 100% 0%,#211e3a 0%,transparent 55%),
+               var(--bg);
+    color:var(--txt);
+    font-family:"PingFang SC","Microsoft YaHei","Hiragino Sans GB",system-ui,-apple-system,sans-serif;
+    min-height:100vh;
+  }
+  .layout{display:flex;min-height:100vh;max-width:1500px;margin:0 auto}
+  aside{
+    width:290px;flex:0 0 290px;padding:22px 16px 30px;
+    border-right:1px solid var(--line);
+    background:rgba(16,22,36,.75);backdrop-filter:blur(6px);
+    position:sticky;top:0;height:100vh;overflow-y:auto;
+  }
+  .brand{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+  .logo{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--acc),var(--acc2));
+        display:flex;align-items:center;justify-content:center;font-weight:800;font-size:17px;color:#fff}
+  .brand h1{font-size:17px;margin:0;letter-spacing:.5px}
+  .brand p{margin:0;font-size:11px;color:var(--dim);letter-spacing:1px}
+  .side-title{font-size:11px;color:var(--dim);margin:18px 8px 8px;letter-spacing:1.5px}
+  .set-btn{
+    display:block;width:100%;text-align:left;cursor:pointer;
+    background:transparent;border:1px solid transparent;border-radius:11px;
+    color:var(--sub);padding:10px 12px;margin-bottom:4px;font-size:13.5px;line-height:1.45;
+    transition:.18s;font-family:inherit;
+  }
+  .set-btn:hover{background:var(--card);color:var(--txt)}
+  .set-btn.active{background:linear-gradient(135deg,rgba(79,140,255,.22),rgba(124,92,255,.18));
+    border-color:rgba(79,140,255,.45);color:#fff;font-weight:600}
+  .set-btn .cnt{float:right;font-size:11px;color:var(--dim);background:#0e1524;border-radius:20px;padding:1px 7px}
+  .set-btn.active .cnt{color:#cfe0ff;background:rgba(79,140,255,.25)}
+  .set-btn .err{float:right;color:#ff8f8f;font-size:11px;padding:1px 6px;border-radius:20px;background:rgba(239,68,68,.15)}
+  main{flex:1;padding:26px 28px 60px;min-width:0}
+  .head{display:flex;flex-wrap:wrap;align-items:flex-end;gap:14px;margin-bottom:6px}
+  .head h2{margin:0;font-size:23px;letter-spacing:.5px}
+  .pill{font-size:12px;color:var(--sub);background:var(--card);border:1px solid var(--line);
+        border-radius:20px;padding:3px 11px}
+  .desc{color:var(--sub);font-size:13px;line-height:1.7;white-space:pre-wrap;margin:12px 0 0;
+        background:var(--card);border:1px solid var(--line);border-left:3px solid var(--acc);
+        border-radius:10px;padding:11px 14px}
+  .stats{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0 4px}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 14px;min-width:96px}
+  .stat b{display:block;font-size:20px;line-height:1.2}
+  .stat span{font-size:11.5px;color:var(--dim)}
+  .tools{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:18px 0 12px}
+  .search{flex:1;min-width:200px;position:relative}
+  .search input{
+    width:100%;background:var(--card);border:1px solid var(--line);border-radius:10px;
+    padding:10px 12px 10px 34px;color:var(--txt);font-size:13.5px;font-family:inherit;outline:none;
+  }
+  .search input:focus{border-color:var(--acc)}
+  .search svg{position:absolute;left:11px;top:10px;opacity:.5}
+  .chip{cursor:pointer;background:var(--card);border:1px solid var(--line);color:var(--sub);
+        border-radius:20px;padding:6px 13px;font-size:12.5px;font-family:inherit;transition:.16s}
+  .chip:hover{color:var(--txt);border-color:var(--dim)}
+  .chip.on{background:linear-gradient(135deg,var(--acc),var(--acc2));color:#fff;border-color:transparent;font-weight:600}
+  .btn{background:transparent;border:1px dashed var(--line);color:var(--dim);
+       border-radius:20px;padding:6px 13px;font-size:12.5px;cursor:pointer;font-family:inherit}
+  .btn:hover{color:var(--txt);border-color:var(--acc)}
+  .wrap{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+  table{width:100%;border-collapse:collapse}
+  th{text-align:left;font-size:11.5px;letter-spacing:1px;color:var(--dim);font-weight:600;
+     padding:12px 14px;background:#141c2c;border-bottom:1px solid var(--line);white-space:nowrap}
+  td{padding:12px 14px;border-bottom:1px solid rgba(42,55,82,.6);font-size:13.5px;vertical-align:middle}
+  tr:last-child td{border-bottom:none}
+  tbody tr{transition:.15s}
+  tbody tr:hover{background:var(--card2)}
+  .idx{color:var(--dim);font-variant-numeric:tabular-nums;width:44px}
+  .pname{font-weight:600;line-height:1.5}
+  .pname a{color:var(--txt);text-decoration:none;border-bottom:1px solid transparent}
+  .pname a:hover{color:#8fb8ff;border-bottom-color:#8fb8ff}
+  .nolink{color:var(--sub)}
+  .pid{font-size:11.5px;color:var(--dim);font-weight:400;margin-left:6px}
+  .note{margin-top:6px;font-size:12px;color:#8fa0bd;background:#141c2c;border:1px solid var(--line);
+        border-radius:8px;padding:7px 10px;white-space:pre-wrap;line-height:1.65}
+  .badge{display:inline-block;border-radius:7px;padding:3px 9px;font-size:12px;font-weight:600;white-space:nowrap;
+         text-decoration:none}
+  .s-洛谷{background:rgba(59,130,246,.16);color:#7fb0ff;border:1px solid rgba(59,130,246,.35)}
+  .s-AtCoder{background:rgba(16,185,129,.14);color:#5fd6a8;border:1px solid rgba(16,185,129,.32)}
+  .s-CF{background:rgba(239,68,68,.14);color:#ff8f8f;border:1px solid rgba(239,68,68,.32)}
+  .s-力扣{background:rgba(234,179,8,.14);color:#f2cc5c;border:1px solid rgba(234,179,8,.32)}
+  .s-HDU{background:rgba(168,85,247,.14);color:#c79bff;border:1px solid rgba(168,85,247,.32)}
+  .s-SPOJ{background:rgba(236,72,153,.14);color:#ff9ecd;border:1px solid rgba(236,72,153,.32)}
+  .s-其他,.s-内部题{background:rgba(148,163,184,.13);color:#b3bfd1;border:1px solid rgba(148,163,184,.3)}
+  .diff{border-radius:7px;padding:3px 9px;font-size:12px;font-weight:600;white-space:nowrap;
+        background:rgba(148,163,184,.13);color:#b6c2d4}
+  .d0{background:rgba(148,163,184,.14);color:#aab6c9}
+  .d2{background:rgba(16,185,129,.14);color:#5fd6a8}
+  .d3{background:rgba(6,182,212,.14);color:#5ecfe4}
+  .d4{background:rgba(59,130,246,.16);color:#7fb0ff}
+  .d5{background:rgba(139,92,246,.16);color:#b79bff}
+  .d6{background:rgba(249,115,22,.16);color:#ffab6b}
+  .d7{background:rgba(239,68,68,.16);color:#ff8f8f}
+  .d8{background:rgba(220,38,38,.22);color:#ff6b6b}
+  .tag{display:inline-block;background:#141c2c;border:1px solid var(--line);color:#9fb0cc;
+       border-radius:6px;padding:2px 7px;font-size:11.5px;margin:2px 4px 2px 0}
+  .go{color:var(--dim);font-size:16px;text-decoration:none}
+  tr:hover .go{color:var(--acc)}
+  .state{padding:52px 20px;text-align:center;color:var(--dim);font-size:14px;line-height:2}
+  .state b{color:var(--txt)}
+  .errbox{margin:14px 0 0;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.35);
+          border-radius:10px;padding:12px 14px;font-size:13px;color:#ffb3b3;line-height:1.8}
+  .errbox code{background:#0e1524;border:1px solid var(--line);border-radius:6px;padding:2px 7px;
+               color:#cfe0ff;font-size:12.5px}
+  .errbox button{margin-top:8px;background:var(--card);border:1px solid var(--line);color:var(--txt);
+                 border-radius:8px;padding:6px 12px;font-size:12.5px;cursor:pointer;font-family:inherit}
+  .warn{background:rgba(234,179,8,.1);border:1px solid rgba(234,179,8,.32);color:#f2cc5c;
+        border-radius:10px;padding:11px 14px;font-size:12.5px;line-height:1.8;margin:12px 0 0}
+  .warn code{background:#0e1524;border:1px solid var(--line);border-radius:6px;padding:2px 7px;color:#cfe0ff}
+  .foot{margin-top:18px;font-size:11.5px;color:var(--dim);line-height:1.8}
+  .mob{display:none;background:var(--card);border:1px solid var(--line);color:var(--txt);
+       border-radius:10px;padding:10px 12px;font-size:13.5px;font-family:inherit;margin-bottom:14px;width:100%}
+  .spin{display:inline-block;width:12px;height:12px;border:2px solid var(--line);border-top-color:var(--acc);
+        border-radius:50%;animation:sp .8s linear infinite;vertical-align:-1px;margin-right:6px}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  @media(max-width:900px){
+    .layout{flex-direction:column}
+    aside{width:100%;flex:none;height:auto;position:static;border-right:none;border-bottom:1px solid var(--line);
+          display:none;padding:16px 14px}
+    aside.show{display:block}
+    .mob{display:block}
+    main{padding:18px 16px 50px}
+    th:nth-child(5),td:nth-child(5),th:nth-child(4),td:nth-child(4){display:none}
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+  <aside id="aside">
+    <div class="brand">
+      <div class="logo">题</div>
+      <div><h1>题单集合</h1><p>TRAINING PROBLEM SETS</p></div>
+    </div>
+    <div class="side-title">题单列表（<span id="setCount"></span>）</div>
+    <div id="setList"></div>
+  </aside>
+
+  <main>
+    <button class="mob" id="mobBtn">☰ 选择题单</button>
+    <div class="head">
+      <h2 id="title">—</h2>
+      <span class="pill" id="sub"></span>
+    </div>
+    <div id="fileWarn" class="warn" style="display:none"></div>
+    <div id="desc" class="desc" style="display:none"></div>
+    <div id="errBox" class="errbox" style="display:none"></div>
+    <div class="stats" id="stats"></div>
+    <div class="tools">
+      <div class="search">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#97a3ba" stroke-width="2.4">
+          <circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+        <input id="q" placeholder="搜索题名 / 算法标签 / 来源 / 备注…" autocomplete="off">
+      </div>
+      <button class="chip on" data-src="全部">全部</button>
+      <span id="srcChips"></span>
+      <button class="btn" id="reloadBtn">⟳ 重新加载</button>
+      <button class="btn" id="openAll">↗ 打开全部链接</button>
+    </div>
+    <div class="wrap">
+      <table>
+        <thead><tr>
+          <th>#</th><th>题目</th><th>来源</th><th>难度</th><th>算法标签</th><th></th>
+        </tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+    <div class="state" id="state"></div>
+    <div class="foot">
+      点击题名或右侧 ↗ 在新标签页打开原题 · 无链接题目为内部题 / 线下题，可查看备注说明 ·
+      题单清单在 HTML 顶部 <code>SETS</code> 数组中手动维护（只写 json 文件名）。
+      <div id="baseInfo" style="margin-top:4px;color:#7f8ca5"></div>
+    </div>
+  </main>
+</div>
+
+<script>
+/* =========================================================================
+ * 【手动维护区】题单清单 —— 只写 json 文件名即可
+ *   加题单：数组里加一行 'xxx.json'      删题单：删掉那一行
+ *   json 地址 = 当前页面所在目录 + JSON_DIR + 文件名，自动拼接，例如：
+ *     页面   https://oi.aaa.com/problem-list-viewer
+ *     JSON_DIR = 'problem-lists'
+ *     →  https://oi.aaa.com/problem-lists/【集训】专题（悬线法）.json
+ *
+ *   可选写法（需要特殊地址时用对象）：
+ *     { name: '显示名', url: 'https://…/xxx.json' }   // 完整地址，直接覆盖
+ *     { name: 'xxx.json', dir: 'other-dir' }          // 只改这一项的目录
+ * ========================================================================= */
+const JSON_DIR = 'problem-lists';   // 留空字符串 '' 表示 json 与 html 同级目录
+const JSON_BASE = '';               // 一般留空：自动取「当前页面地址去掉最后一段」。
+                                    // 若页面在子目录且最后一段不是文件名（如 /tools/list/），
+                                    // 可在此写死如 'https://oi.aaa.com/tools/list'
+
+const SETS = [
+  '【集训】专题（悬线法）.json',
+  '26.9复赛模拟赛01 (ABC435).json',
+  '26.9复赛模拟赛02(ABC436).json',
+  '26.9复赛模拟赛03(ABC443).json',
+  '【集训01】订正.json',
+  '【集训02】订正.json',
+  '【集训03】CSP-J模拟赛1005.json',
+  '【集训04】CSP-J模拟赛1006.json',
+  '【集训05】CSP-J模拟赛1007.json',
+];
+/* =========================== 维护区结束 =========================== */
+
+/* ---------- 由当前页面 URL 推导 json 基址 ---------- */
+function pageDir(){
+  if(JSON_BASE) return JSON_BASE.replace(/\/+$/, '') + '/';
+  let u = location.href.split('#')[0].split('?')[0];
+  if(/\/$/.test(u)) return u;                       // 已经是目录形式，直接用
+  const i = u.lastIndexOf('/');
+  const hostEnd = u.indexOf('//') + 1;              // 至少保留协议后的主机名
+  if(i > hostEnd + 1) return u.substring(0, i + 1); // 去掉最后一段（html 文件名）
+  return u + '/';
+}
+const BASE_DIR = pageDir() + (JSON_DIR ? JSON_DIR.replace(/\/+$/, '') + '/' : '');
+
+function fileNameOf(item){ return (typeof item === 'string' ? item : (item.name || '')); }
+function labelOf(item){ return fileNameOf(item).replace(/\.[A-Za-z0-9]+$/, ''); }
+function jsonURL(item){
+  if(typeof item !== 'string'){
+    if(item.url)  return item.url;
+    if(item.dir)  return pageDir() + item.dir.replace(/\/+$/, '') + '/' + encodeURI(fileNameOf(item));
+  }
+  let f = fileNameOf(item);
+  if(!/\.[A-Za-z0-9]+$/.test(f)) f += '.json';   // 忘了写后缀自动补 .json
+  return BASE_DIR + encodeURI(f);
+}
+
+const DIFF_NAME = ['暂无评定','入门','普及-','普及','普及+/提高-','提高','提高+/省选-','省选/NOI-','NOI/NOI+/CTS'];
+const DIFF_CLS  = ['d0','d1','d2','d3','d4','d5','d6','d7','d8'];
+const SRC_ORDER = ['洛谷','AtCoder','CF','力扣','HDU','SPOJ','内部题','其他'];
+
+let cur = 0, curSrc = '全部', curData = null;
+const cache = {};
+
+const $ = id => document.getElementById(id);
+const esc = t => String(t == null ? '' : t).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* ---------- 来源判定：按链接域名 ---------- */
+function sourceOf(url){
+  if(!url) return '内部题';
+  const u = url.toLowerCase();
+  if(u.includes('luogu.com.cn')) return '洛谷';
+  if(u.includes('atcoder.jp'))   return 'AtCoder';
+  if(u.includes('codeforces.com')) return 'CF';
+  if(u.includes('leetcode'))     return '力扣';
+  if(u.includes('acm.hdu.edu.cn') || u.includes('hdu.edu.cn')) return 'HDU';
+  if(u.includes('spoj.com'))     return 'SPOJ';
+  if(u.includes('acwing.com'))   return 'AcWing';
+  if(u.includes('nowcoder.com')) return '牛客';
+  if(u.includes('vjudge'))       return 'VJudge';
+  return '其他';
+}
+function pidOf(name){
+  const m = String(name||'').match(/P\d{4,5}|CF\d{2,4}[A-Z]\d?|[A-Z]{2,4}[-_]\d{3,4}[A-Za-z]?/);
+  return m ? m[0] : '';
+}
+
+/* ---------- json → 统一结构 ---------- */
+function normalize(raw){
+  const list = Array.isArray(raw) ? raw : (raw.problems || []);
+  const problems = list.map(p => {
+    const url = (p.url || '').trim();
+    let diff = p.difficulty;
+    if(diff === '' || diff === undefined || diff === null) diff = null;
+    const num = Number(diff);
+    const okNum = Number.isFinite(num) && String(diff) !== '';
+    return {
+      name: p.name || '(未命名)',
+      url,
+      src: sourceOf(url),
+      algs: p.algorithms || [],
+      diff: okNum ? num : null,
+      diffName: p.difficultyName || (okNum ? DIFF_NAME[num] : ''),
+      status: p.status || '',
+      note: (p.note || '').trim(),
+    };
+  });
+  return {
+    name: raw.name || '',
+    desc: (raw.description || '').trim(),
+    problems,
+  };
+}
+
+/* ---------- 侧栏 ---------- */
+$('setCount').textContent = SETS.length;
+SETS.forEach((s, i) => {
+  const b = document.createElement('button');
+  b.className = 'set-btn';
+  b.innerHTML = esc(labelOf(s)) + '<span class="cnt" data-cnt="' + i + '">·</span>';
+  b.onclick = () => select(i, true);
+  $('setList').appendChild(b);
+});
+$('mobBtn').onclick = () => $('aside').classList.toggle('show');
+
+/* ---------- 加载 ---------- */
+function select(i, userAction){
+  cur = i; curSrc = '全部'; $('q').value = '';
+  [...$('setList').children].forEach((b2, k) => b2.classList.toggle('active', k === i));
+  $('title').textContent = labelOf(SETS[i]);
+  $('sub').textContent = '加载中…';
+  $('desc').style.display = 'none';
+  $('errBox').style.display = 'none';
+  $('stats').innerHTML = '';
+  $('srcChips').innerHTML = '';
+  $('tbody').innerHTML = '';
+  $('state').innerHTML = '<div class="state"><span class="spin"></span>正在读取 '
+                       + esc(decodeURI(jsonURL(SETS[i]))) + ' …</div>';
+  if(userAction) location.hash = '#' + i;
+  load(i);
+}
+
+function load(i){
+  const s = SETS[i];
+  if(cache[i]){ render(cache[i]); return; }
+  fetch(jsonURL(s), { cache: 'no-store' })
+    .then(r => { if(!r.ok) throw new Error('HTTP ' + r.status + ' ' + r.statusText); return r.json(); })
+    .then(raw => { const d = normalize(raw); cache[i] = d; if(cur === i) render(d); })
+    .catch(err => { if(cur === i) showError(i, err); });
+}
+
+function showError(i, err){
+  $('sub').textContent = '加载失败';
+  $('state').innerHTML = '';
+  const u = jsonURL(SETS[i]);
+  const isFile = location.protocol === 'file:';
+  let html = '<b>无法读取题单文件：</b><code>' + esc(decodeURI(u)) + '</code><br>' + esc(err.message || err);
+  if(isFile){
+    html += '<br><br>当前以 <code>file://</code> 打开，拼接出的地址是本地路径，通常读不到。'
+         +  '请通过 <code>https://…/problem-list-viewer</code> 这样的线上地址访问；'
+         +  '本地调试可先执行 <code>python3 -m http.server 8000</code>，并把 json 放到对应目录。'
+         +  '也可点下面按钮直接从磁盘选取该 json 文件。';
+  }else{
+    html += '<br><br>当前拼接基准：<code>' + esc(BASE_DIR) + '</code><br>'
+         +  '请确认 json 实际放在该目录下，或修改 <code>JSON_DIR</code> / 该项的 <code>url</code>。';
+  }
+  html += '<br><button id="pickFile">📂 从本地选择该 json 文件</button> <button id="retryBtn">重试</button>';
+  const box = $('errBox');
+  box.innerHTML = html; box.style.display = 'block';
+  $('retryBtn').onclick = () => select(i, false);
+  $('pickFile').onclick = () => {
+    const inp = document.createElement('input');
+    inp.type = 'file'; inp.accept = '.json,application/json';
+    inp.onchange = () => {
+      const f = inp.files[0]; if(!f) return;
+      const rd = new FileReader();
+      rd.onload = () => {
+        try{
+          const d = normalize(JSON.parse(rd.result));
+          cache[i] = d; box.style.display = 'none'; render(d);
+        }catch(e){ box.innerHTML = '<b>JSON 解析失败：</b>' + esc(e.message); }
+      };
+      rd.readAsText(f, 'utf-8');
+    };
+    inp.click();
+  };
+  const btn = $('setList').children[i];
+  const c = btn.querySelector('.cnt'); if(c){ c.className = 'err'; c.textContent = '失败'; }
+}
+
+/* ---------- 渲染 ---------- */
+function render(d){
+  curData = d;
+  const ps = d.problems;
+  const linked = ps.filter(p => p.url).length;
+  $('sub').textContent = ps.length + ' 题 · ' + linked + ' 题可在线打开';
+  if(d.name) $('title').textContent = d.name;
+  const cnt = $('setList').children[cur].querySelector('.cnt');
+  if(cnt){ cnt.className = 'cnt'; cnt.textContent = ps.length; }
+
+  if(d.desc){ $('desc').style.display = 'block'; $('desc').textContent = d.desc; }
+  else $('desc').style.display = 'none';
+
+  const srcSet = {}, algSet = new Set();
+  ps.forEach(p => { srcSet[p.src] = (srcSet[p.src] || 0) + 1; (p.algs || []).forEach(a => algSet.add(a)); });
+  $('stats').innerHTML =
+      '<div class="stat"><b>' + ps.length + '</b><span>题目总数</span></div>' +
+      '<div class="stat"><b>' + Object.keys(srcSet).length + '</b><span>题目来源</span></div>' +
+      '<div class="stat"><b>' + linked + '</b><span>可在线打开</span></div>' +
+      '<div class="stat"><b>' + algSet.size + '</b><span>涉及算法</span></div>';
+
+  $('srcChips').innerHTML = '';
+  SRC_ORDER.filter(x => srcSet[x]).forEach(x => {
+    const c = document.createElement('button');
+    c.className = 'chip' + (x === curSrc ? ' on' : '');
+    c.textContent = x + ' ' + srcSet[x];
+    c.onclick = () => { curSrc = (curSrc === x ? '全部' : x); render(d); };
+    $('srcChips').appendChild(c);
+  });
+  renderTable();
+}
+
+function renderTable(){
+  if(!curData) return;
+  const kw = $('q').value.trim().toLowerCase();
+  const rows = curData.problems.filter(p => {
+    if(curSrc !== '全部' && p.src !== curSrc) return false;
+    if(!kw) return true;
+    return (p.name + ' ' + p.src + ' ' + (p.algs || []).join(' ') + ' ' + p.note + ' ' + p.diffName)
+            .toLowerCase().includes(kw);
+  });
+  const tb = $('tbody'); tb.innerHTML = '';
+  rows.forEach((p, i) => {
+    const tr = document.createElement('tr');
+    const pid = pidOf(p.name);
+    const title = p.url
+      ? '<a href="' + esc(p.url) + '" target="_blank" rel="noopener noreferrer">' + esc(p.name) + '</a>'
+      : '<span class="nolink">' + esc(p.name) + ' <span class="pid">（无公开链接）</span></span>';
+    const diffHtml = p.diff == null
+      ? '<span style="color:#6b7891">—</span>'
+      : '<span class="diff ' + (DIFF_CLS[p.diff] || 'd0') + '">' + esc(p.diffName || DIFF_NAME[p.diff] || '') + '</span>';
+    const tags = (p.algs && p.algs.length)
+      ? p.algs.map(a => '<span class="tag">' + esc(a) + '</span>').join('')
+      : '<span style="color:#6b7891">—</span>';
+    const note = p.note ? '<div class="note">' + esc(p.note) + '</div>' : '';
+    const st = p.status ? ' <span class="pid">· ' + esc(p.status) + '</span>' : '';
+    const srcHtml = p.url
+      ? '<a class="badge s-' + p.src + '" href="' + esc(p.url) + '" target="_blank" rel="noopener noreferrer">' + esc(p.src) + '</a>'
+      : '<span class="badge s-' + p.src + '">' + esc(p.src) + '</span>';
+    tr.innerHTML =
+      '<td class="idx">' + String(i + 1).padStart(2, '0') + '</td>' +
+      '<td><div class="pname">' + title + (pid ? '<span class="pid">' + esc(pid) + '</span>' : '') + st + '</div>' + note + '</td>' +
+      '<td>' + srcHtml + '</td>' +
+      '<td>' + diffHtml + '</td>' +
+      '<td>' + tags + '</td>' +
+      '<td style="width:36px;text-align:right">' +
+        (p.url ? '<a class="go" href="' + esc(p.url) + '" target="_blank" rel="noopener noreferrer">↗</a>' : '') +
+      '</td>';
+    tb.appendChild(tr);
+  });
+  $('state').innerHTML = rows.length ? '' : '<div class="state">没有匹配的题目，试试换个关键词～</div>';
+}
+
+/* ---------- 交互 ---------- */
+$('q').addEventListener('input', renderTable);
+$('reloadBtn').onclick = () => { delete cache[cur]; select(cur, false); };
+$('openAll').onclick = () => {
+  if(!curData) return;
+  const links = curData.problems.filter(p => p.url).map(p => p.url);
+  if(!links.length){ alert('本题单暂无可打开的在线链接'); return; }
+  if(!confirm('将尝试在新标签页打开 ' + links.length + ' 个题目链接。\n浏览器可能拦截弹窗，请在提示时选择「允许本站弹出窗口」。继续？')) return;
+  links.forEach(u => window.open(u, '_blank', 'noopener'));
+};
+
+/* ---------- 启动 ---------- */
+$('baseInfo').innerHTML = 'json 基址：<code>' + esc(decodeURI(BASE_DIR)) + '</code>';
+if(location.protocol === 'file:'){
+  $('fileWarn').style.display = 'block';
+  $('fileWarn').innerHTML = '⚠️ 当前以 <code>file://</code> 打开，拼接出的 json 地址是本地路径，浏览器会拦截。'
+    + '请通过线上地址（如 <code>https://…/problem-list-viewer</code>）访问；'
+    + '本地调试可在 html 同级建 <code>' + esc(JSON_DIR || '') + '</code> 目录并运行 '
+    + '<code>python3 -m http.server 8000</code>。加载失败后也可点「从本地选择该 json 文件」手动载入。';
+}
+const h = parseInt((location.hash || '').replace('#', ''), 10);
+select(Number.isFinite(h) && h >= 0 && h < SETS.length ? h : 0, false);
+</script>
+</body>
+</html>

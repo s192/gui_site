@@ -1,0 +1,76 @@
+{
+  "version": 1,
+  "name": "【集训02】订正",
+  "description": "copy",
+  "exportedAt": "2026-10-08T07:19:31.857Z",
+  "problems": [
+    {
+      "name": "冰雕大赛ice（）",
+      "url": "",
+      "algorithms": [],
+      "difficulty": "",
+      "status": "未开始",
+      "note": "信友队内部题，无公开页面​"
+    },
+    {
+      "name": "勾股数gg（）",
+      "url": "",
+      "algorithms": [],
+      "difficulty": "",
+      "status": "未开始",
+      "note": ""
+    },
+    {
+      "name": "加法进位plus",
+      "url": "",
+      "algorithms": [],
+      "difficulty": "",
+      "status": "未开始",
+      "note": "上海计算机学会2024年5月月赛C++丙组T1加法的进位"
+    },
+    {
+      "name": "数字迷宫maze",
+      "url": "",
+      "algorithms": [],
+      "difficulty": "",
+      "status": "未开始",
+      "note": "上海计算机学会2024年4月月赛C++丙组T5数字迷宫"
+    },
+    {
+      "name": "末尾最多零的个数zero",
+      "url": "https://codeforces.com/problemset/problem/837/D",
+      "algorithms": [
+        "DP",
+        "数学"
+      ],
+      "difficulty": "",
+      "status": "未开始",
+      "note": ""
+    },
+    {
+      "name": "四数之和sum(Southwestern Europe 2005 - E: 4 values whose sum is 0)",
+      "url": "http://www.spoj.com/problems/SUMFOUR/",
+      "algorithms": [
+        "搜索",
+        "二分",
+        "枚举"
+      ],
+      "difficulty": "",
+      "status": "未开始",
+      "note": ""
+    },
+    {
+      "name": "表达式的转换",
+      "url": "https://www.luogu.com.cn/problem/P1175",
+      "algorithms": [
+        "模拟",
+        "字符串",
+        "线性数据结构",
+        "栈"
+      ],
+      "difficulty": "",
+      "status": "未开始",
+      "note": ""
+    }
+  ]
+}

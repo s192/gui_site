@@ -1,0 +1,82 @@
+{
+  "version": 2,
+  "name": "【集训】专题（悬线法）",
+  "description": "",
+  "difficultySystem": "luogu-2026（0 暂无评定 / 1 入门 / 2 普及- / 3 普及 / 4 普及+/提高- / 5 提高 / 6 提高+/省选- / 7 省选/NOI- / 8 NOI/NOI+/CTS）",
+  "exportedAt": "2026-10-08T07:51:20.605Z",
+  "problems": [
+    {
+      "name": "柱状图中最大的矩形",
+      "url": "https://leetcode.cn/problems/largest-rectangle-in-histogram/description/",
+      "algorithms": [
+        "栈",
+        "数组",
+        "单调栈",
+        "区间最值查询"
+      ],
+      "difficulty": 0,
+      "difficultyName": "暂无评定",
+      "note": ""
+    },
+    {
+      "pid": "P4147",
+      "name": "玉蟾宫",
+      "url": "https://www.luogu.com.cn/problem/P4147",
+      "algorithms": [
+        "DP",
+        "线段树",
+        "枚举",
+        "分治",
+        "笛卡尔树",
+        "单调栈"
+      ],
+      "difficulty": 4,
+      "difficultyName": "普及+/提高-",
+      "note": ""
+    },
+    {
+      "pid": "P1387",
+      "name": "最大正方形",
+      "url": "https://www.luogu.com.cn/problem/P1387",
+      "algorithms": [
+        "DP",
+        "枚举",
+        "前缀和"
+      ],
+      "difficulty": 2,
+      "difficultyName": "普及-",
+      "note": ""
+    },
+    {
+      "pid": "P1169",
+      "name": "棋盘制作",
+      "url": "https://www.luogu.com.cn/problem/P1169",
+      "algorithms": [
+        "DP",
+        "栈"
+      ],
+      "difficulty": 4,
+      "difficultyName": "普及+/提高-",
+      "note": ""
+    },
+    {
+      "name": "最大矩形周长（CF22B Bargaining Table）",
+      "url": "https://codeforces.com/problemset/problem/22/B",
+      "algorithms": [],
+      "difficulty": 2,
+      "difficultyName": "普及-",
+      "note": ""
+    },
+    {
+      "name": "集合代价（AT_ndpc2026_f）",
+      "url": "https://atcoder.jp/contests/ndpc/tasks/ndpc2026_f",
+      "algorithms": [
+        "树形DP",
+        "笛卡尔树"
+      ],
+      "difficulty": 4,
+      "difficultyName": "普及+/提高-",
+      "note": ""
+    }
+  ]
+}

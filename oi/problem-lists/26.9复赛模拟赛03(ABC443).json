@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "name": "26.9复赛模拟赛03(ABC443)",
+  "description": "",
+  "exportedAt": "2026-10-08T07:19:38.090Z",
+  "problems": [
+    {
+      "name": "节分(Setsubun)",
+      "url": "https://atcoder.jp/contests/abc443/tasks/abc443_b",
+      "algorithms": [],
+      "difficulty": "",
+      "status": "未开始",
+      "note": ""
+    },
+    {
+      "name": "刷手机(Chokutter Addiction)",
+      "url": "https://atcoder.jp/contests/abc443/tasks/abc443_c",
+      "algorithms": [],
+      "difficulty": "",
+      "status": "未开始",
+      "note": ""
+    },
+    {
+      "name": "棋子队列(Pawn Line)",
+      "url": "https://atcoder.jp/contests/abc443/tasks/abc443_d",
+      "algorithms": [],
+      "difficulty": "",
+      "status": "未开始",
+      "note": ""
+    },
+    {
+      "name": "攀银(Climbing Silver)",
+      "url": "https://atcoder.jp/contests/abc443/tasks/abc443_e",
+      "algorithms": [],
+      "difficulty": "",
+      "status": "未开始",
+      "note": ""
+    },
+    {
+      "name": "位数求和（P16267 [蓝桥杯 2026 省 Python B 组] 位数求和）",
+      "url": "https://www.luogu.com.cn/problem/P16267",
+      "algorithms": [],
+      "difficulty": "",
+      "status": "未开始",
+      "note": ""
+    },
+    {
+      "name": "非递增数(Non-Increasing Number)",
+      "url": "https://atcoder.jp/contests/abc443/tasks/abc443_f",
+      "algorithms": [],
+      "difficulty": "",
+      "status": "未开始",
+      "note": ""
+    }
+  ]
+}

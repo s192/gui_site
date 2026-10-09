@@ -1,0 +1,96 @@
+{
+  "version": 1,
+  "name": "【集训01】订正",
+  "description": "copy from",
+  "exportedAt": "2026-10-08T07:19:33.334Z",
+  "problems": [
+    {
+      "name": "农场收获（farm）",
+      "url": "https://atcoder.jp/contests/awc0088/tasks/awc0088_c",
+      "algorithms": [
+        "差分"
+      ],
+      "difficulty": "",
+      "status": "未开始",
+      "note": ""
+    },
+    {
+      "name": "图书借阅（library）",
+      "url": "https://atcoder.jp/contests/awc0098/tasks/awc0098_b",
+      "algorithms": [
+        "整数二分"
+      ],
+      "difficulty": "",
+      "status": "未开始",
+      "note": ""
+    },
+    {
+      "name": "连接管道（pipe）",
+      "url": "https://atcoder.jp/contests/awc0089/tasks/awc0089_b",
+      "algorithms": [
+        "贪心"
+      ],
+      "difficulty": "",
+      "status": "未开始",
+      "note": ""
+    },
+    {
+      "name": "赏樱散步（walk）",
+      "url": "https://atcoder.jp/contests/awc0089/tasks/awc0089_c",
+      "algorithms": [
+        "双指针"
+      ],
+      "difficulty": "",
+      "status": "未开始",
+      "note": ""
+    },
+    {
+      "name": "折扣通行券（pass）",
+      "url": "https://atcoder.jp/contests/awc0098/tasks/awc0098_c",
+      "algorithms": [
+        "KMP"
+      ],
+      "difficulty": "",
+      "status": "未开始",
+      "note": ""
+    },
+    {
+      "name": "控制面板（panel）",
+      "url": "https://atcoder.jp/contests/awc0088/tasks/awc0088_d",
+      "algorithms": [
+        "哈希表"
+      ],
+      "difficulty": "",
+      "status": "未开始",
+      "note": ""
+    },
+    {
+      "name": "[蓝桥杯 2015 国 B] 密文搜索",
+      "url": "https://www.luogu.com.cn/problem/P8630",
+      "algorithms": [
+        "哈希"
+      ],
+      "difficulty": "",
+      "status": "未开始",
+      "note": ""
+    },
+    {
+      "name": "兔子与兔子",
+      "url": "https://www.luogu.com.cn/problem/P10468",
+      "algorithms": [
+        "哈希"
+      ],
+      "difficulty": "",
+      "status": "未开始",
+      "note": ""
+    },
+    {
+      "name": "解方程hard",
+      "url": "https://acm.hdu.edu.cn/showproblem.php?pid=1496",
+      "algorithms": [],
+      "difficulty": "",
+      "status": "未开始",
+      "note": ""
+    }
+  ]
+}
