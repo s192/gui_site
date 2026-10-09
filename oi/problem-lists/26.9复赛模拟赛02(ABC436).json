@@ -1,55 +1,71 @@
 {
-  "version": 1,
+  "version": 2,
   "name": "26.9复赛模拟赛02(ABC436)",
   "description": "",
-  "exportedAt": "2026-10-08T07:19:36.551Z",
+  "tags": [
+    "CSP-J"
+  ],
+  "difficultySystem": "luogu-2026（0 暂无评定 / 1 入门 / 2 普及- / 3 普及 / 4 普及+/提高- / 5 提高 / 6 提高+/省选- / 7 省选/NOI- / 8 NOI/NOI+/CTS）",
+  "exportedAt": "2026-10-09T01:37:46.741Z",
   "problems": [
     {
       "name": "o 填充（o-padding）",
       "url": "https://atcoder.jp/contests/abc436/tasks/abc436_a",
-      "algorithms": [],
-      "difficulty": "",
-      "status": "未开始",
+      "algorithms": [
+        "模拟",
+        "字符串"
+      ],
+      "difficulty": 1,
+      "difficultyName": "入门",
       "note": ""
     },
     {
       "name": "幻方（Magic Square）",
       "url": "https://atcoder.jp/contests/abc436/tasks/abc436_b",
-      "algorithms": [],
-      "difficulty": "",
-      "status": "未开始",
+      "algorithms": [
+        "模拟",
+        "枚举"
+      ],
+      "difficulty": 2,
+      "difficultyName": "普及-",
       "note": ""
     },
     {
       "name": "2x2 放置（2x2 Placing）",
       "url": "https://atcoder.jp/contests/abc436/tasks/abc436_c",
-      "algorithms": [],
-      "difficulty": "",
-      "status": "未开始",
+      "algorithms": [
+        "模拟"
+      ],
+      "difficulty": 2,
+      "difficultyName": "普及-",
       "note": ""
     },
     {
       "name": "传送迷宫（Teleport Maze）",
       "url": "https://atcoder.jp/contests/abc436/tasks/abc436_d",
-      "algorithms": [],
-      "difficulty": "",
-      "status": "未开始",
+      "algorithms": [
+        "BFS"
+      ],
+      "difficulty": 3,
+      "difficultyName": "普及",
       "note": ""
     },
     {
       "name": "最少交换（Minimum Swap）",
       "url": "https://atcoder.jp/contests/abc436/tasks/abc436_e",
       "algorithms": [],
-      "difficulty": "",
-      "status": "未开始",
+      "difficulty": 4,
+      "difficultyName": "普及+/提高-",
       "note": ""
     },
     {
       "name": "星空风景照（Starry Landscape Photo）",
       "url": "https://atcoder.jp/contests/abc436/tasks/abc436_f",
-      "algorithms": [],
-      "difficulty": "",
-      "status": "未开始",
+      "algorithms": [
+        "树状数组"
+      ],
+      "difficulty": 4,
+      "difficultyName": "普及+/提高-",
       "note": ""
     }
   ]

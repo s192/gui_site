@@ -1,23 +1,27 @@
 {
-  "version": 1,
+  "version": 2,
   "name": "【集训05】CSP-J模拟赛1007",
   "description": "copy from【集训05】CSP-J模拟赛1007",
-  "exportedAt": "2026-10-08T07:19:26.682Z",
+  "tags": [
+    "CSP-J"
+  ],
+  "difficultySystem": "luogu-2026（0 暂无评定 / 1 入门 / 2 普及- / 3 普及 / 4 普及+/提高- / 5 提高 / 6 提高+/省选- / 7 省选/NOI- / 8 NOI/NOI+/CTS）",
+  "exportedAt": "2026-10-09T01:37:41.003Z",
   "problems": [
     {
       "name": "整除调色col（CF1374D Zero Remainder Array）",
       "url": "https://codeforces.com/problemset/problem/1374/D",
       "algorithms": [],
-      "difficulty": "",
-      "status": "未开始",
+      "difficulty": 0,
+      "difficultyName": "暂无评定",
       "note": ""
     },
     {
       "name": "板材装箱box（CF1498B Box Fitting）",
       "url": "https://codeforces.com/problemset/problem/1498/B",
       "algorithms": [],
-      "difficulty": "",
-      "status": "未开始",
+      "difficulty": 0,
+      "difficultyName": "暂无评定",
       "note": ""
     },
     {
@@ -30,56 +34,72 @@
         "ST表",
         "单调栈"
       ],
-      "difficulty": "",
-      "status": "未开始",
+      "difficulty": 0,
+      "difficultyName": "暂无评定",
       "note": ""
     },
     {
       "name": "排队不快度queue",
       "url": "https://codeforces.com/problemset/problem/92/D",
       "algorithms": [],
-      "difficulty": "",
-      "status": "未开始",
+      "difficulty": 0,
+      "difficultyName": "暂无评定",
       "note": ""
     },
     {
       "name": "区间第k大kth",
       "url": "",
       "algorithms": [],
-      "difficulty": "",
-      "status": "未开始",
+      "difficulty": 0,
+      "difficultyName": "暂无评定",
       "note": "清北学堂 2021.10.6 模拟赛 T1（命题人 tyytyy）"
     },
     {
+      "pid": "P5250",
       "name": "木材仓库",
       "url": "https://www.luogu.com.cn/problem/P5250",
-      "algorithms": [],
-      "difficulty": "",
-      "status": "未开始",
+      "algorithms": [
+        "二分",
+        "STL"
+      ],
+      "difficulty": 3,
+      "difficultyName": "普及",
       "note": ""
     },
     {
+      "pid": "P8939",
       "name": "序列操作~（P8939 [DTOI 2023] B. 去年 11 月卵梦蕾简易钨丝）",
       "url": "https://www.luogu.com.cn/problem/P8939",
       "algorithms": [],
-      "difficulty": "",
-      "status": "未开始",
+      "difficulty": 3,
+      "difficultyName": "普及",
       "note": ""
     },
     {
+      "pid": "P2161",
       "name": "线段维护（P2161 [SHOI2009] 会场预约）",
       "url": "https://www.luogu.com.cn/problem/P2161",
-      "algorithms": [],
-      "difficulty": "",
-      "status": "未开始",
+      "algorithms": [
+        "线段树",
+        "平衡树",
+        "树状数组",
+        "优先队列"
+      ],
+      "difficulty": 4,
+      "difficultyName": "普及+/提高-",
       "note": ""
     },
     {
       "name": "覆盖查询（Cover query）（AT_abc435_e [ABC435E] Cover query）",
       "url": "https://atcoder.jp/contests/abc435/tasks/abc435_e",
-      "algorithms": [],
-      "difficulty": "",
-      "status": "未开始",
+      "algorithms": [
+        "线段树",
+        "并查集",
+        "颜色段均摊（珂朵莉树ODT）",
+        "离散化"
+      ],
+      "difficulty": 4,
+      "difficultyName": "普及+/提高-",
       "note": ""
     }
   ]

@@ -1,55 +1,74 @@
 {
-  "version": 1,
+  "version": 2,
   "name": "26.9复赛模拟赛01 (ABC435)",
   "description": "请同学们选择3~4个小时完成比赛：\n第二填公开比赛题解\n需要写反思和错题订正的反思，对赛时题目的理解和正解的算法理解\n获得一半分数且排名：第一名800星币，第二名600，第三名400，后面能获得一半分数的同学，也能获得300星币！",
-  "exportedAt": "2026-10-08T07:19:34.932Z",
+  "tags": [
+    "CSP-J"
+  ],
+  "difficultySystem": "luogu-2026（0 暂无评定 / 1 入门 / 2 普及- / 3 普及 / 4 普及+/提高- / 5 提高 / 6 提高+/省选- / 7 省选/NOI- / 8 NOI/NOI+/CTS）",
+  "exportedAt": "2026-10-09T01:37:42.473Z",
   "problems": [
     {
       "name": "三角数（Triangular Number）",
       "url": "https://atcoder.jp/contests/abc435/tasks/abc435_a",
       "algorithms": [],
-      "difficulty": "",
-      "status": "未开始",
+      "difficulty": 1,
+      "difficultyName": "入门",
       "note": ""
     },
     {
       "name": "无整除区间（No-Divisible Range）",
       "url": "https://atcoder.jp/contests/abc435/tasks/abc435_b",
-      "algorithms": [],
-      "difficulty": "",
-      "status": "未开始",
+      "algorithms": [
+        "枚举"
+      ],
+      "difficulty": 1,
+      "difficultyName": "入门",
       "note": ""
     },
     {
       "name": "多米诺（Domino）",
       "url": "https://atcoder.jp/contests/abc435/tasks/abc435_c",
-      "algorithms": [],
-      "difficulty": "",
-      "status": "未开始",
+      "algorithms": [
+        "模拟"
+      ],
+      "difficulty": 2,
+      "difficultyName": "普及-",
       "note": ""
     },
     {
       "name": "可达性查询2（Reachability Query 2）",
       "url": "https://atcoder.jp/contests/abc435/tasks/abc435_d",
-      "algorithms": [],
-      "difficulty": "",
-      "status": "未开始",
+      "algorithms": [
+        "BFS",
+        "DFS"
+      ],
+      "difficulty": 3,
+      "difficultyName": "普及",
       "note": ""
     },
     {
       "name": "覆盖查询（Cover query）",
       "url": "https://atcoder.jp/contests/abc435/tasks/abc435_e",
-      "algorithms": [],
-      "difficulty": "",
-      "status": "未开始",
+      "algorithms": [
+        "线段树",
+        "并查集",
+        "颜色段均摊（珂朵莉树ODT）",
+        "离散化"
+      ],
+      "difficulty": 4,
+      "difficultyName": "普及+/提高-",
       "note": ""
     },
     {
       "name": "猫咪运动（Cat exercise）",
       "url": "https://atcoder.jp/contests/abc435/tasks/abc435_f",
-      "algorithms": [],
-      "difficulty": "",
-      "status": "未开始",
+      "algorithms": [
+        "DP",
+        "笛卡尔树"
+      ],
+      "difficulty": 5,
+      "difficultyName": "提高",
       "note": ""
     }
   ]

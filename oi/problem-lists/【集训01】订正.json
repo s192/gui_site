@@ -1,8 +1,10 @@
 {
-  "version": 1,
+  "version": 2,
   "name": "【集训01】订正",
   "description": "copy from",
-  "exportedAt": "2026-10-08T07:19:33.334Z",
+  "tags": [],
+  "difficultySystem": "luogu-2026（0 暂无评定 / 1 入门 / 2 普及- / 3 普及 / 4 普及+/提高- / 5 提高 / 6 提高+/省选- / 7 省选/NOI- / 8 NOI/NOI+/CTS）",
+  "exportedAt": "2026-10-09T01:37:35.379Z",
   "problems": [
     {
       "name": "农场收获（farm）",
@@ -10,8 +12,8 @@
       "algorithms": [
         "差分"
       ],
-      "difficulty": "",
-      "status": "未开始",
+      "difficulty": 0,
+      "difficultyName": "暂无评定",
       "note": ""
     },
     {
@@ -20,8 +22,8 @@
       "algorithms": [
         "整数二分"
       ],
-      "difficulty": "",
-      "status": "未开始",
+      "difficulty": 0,
+      "difficultyName": "暂无评定",
       "note": ""
     },
     {
@@ -30,8 +32,8 @@
       "algorithms": [
         "贪心"
       ],
-      "difficulty": "",
-      "status": "未开始",
+      "difficulty": 0,
+      "difficultyName": "暂无评定",
       "note": ""
     },
     {
@@ -40,8 +42,8 @@
       "algorithms": [
         "双指针"
       ],
-      "difficulty": "",
-      "status": "未开始",
+      "difficulty": 0,
+      "difficultyName": "暂无评定",
       "note": ""
     },
     {
@@ -50,8 +52,8 @@
       "algorithms": [
         "KMP"
       ],
-      "difficulty": "",
-      "status": "未开始",
+      "difficulty": 0,
+      "difficultyName": "暂无评定",
       "note": ""
     },
     {
@@ -60,36 +62,38 @@
       "algorithms": [
         "哈希表"
       ],
-      "difficulty": "",
-      "status": "未开始",
+      "difficulty": 0,
+      "difficultyName": "暂无评定",
       "note": ""
     },
     {
+      "pid": "P8630",
       "name": "[蓝桥杯 2015 国 B] 密文搜索",
       "url": "https://www.luogu.com.cn/problem/P8630",
       "algorithms": [
         "哈希"
       ],
-      "difficulty": "",
-      "status": "未开始",
+      "difficulty": 3,
+      "difficultyName": "普及",
       "note": ""
     },
     {
+      "pid": "P10468",
       "name": "兔子与兔子",
       "url": "https://www.luogu.com.cn/problem/P10468",
       "algorithms": [
         "哈希"
       ],
-      "difficulty": "",
-      "status": "未开始",
+      "difficulty": 3,
+      "difficultyName": "普及",
       "note": ""
     },
     {
       "name": "解方程hard",
       "url": "https://acm.hdu.edu.cn/showproblem.php?pid=1496",
       "algorithms": [],
-      "difficulty": "",
-      "status": "未开始",
+      "difficulty": 0,
+      "difficultyName": "暂无评定",
       "note": ""
     }
   ]

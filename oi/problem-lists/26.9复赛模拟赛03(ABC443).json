@@ -1,55 +1,77 @@
 {
-  "version": 1,
+  "version": 2,
   "name": "26.9复赛模拟赛03(ABC443)",
   "description": "",
-  "exportedAt": "2026-10-08T07:19:38.090Z",
+  "tags": [
+    "CSP-J"
+  ],
+  "difficultySystem": "luogu-2026（0 暂无评定 / 1 入门 / 2 普及- / 3 普及 / 4 普及+/提高- / 5 提高 / 6 提高+/省选- / 7 省选/NOI- / 8 NOI/NOI+/CTS）",
+  "exportedAt": "2026-10-09T01:37:44.186Z",
   "problems": [
     {
       "name": "节分(Setsubun)",
       "url": "https://atcoder.jp/contests/abc443/tasks/abc443_b",
-      "algorithms": [],
-      "difficulty": "",
-      "status": "未开始",
+      "algorithms": [
+        "模拟",
+        "二分"
+      ],
+      "difficulty": 1,
+      "difficultyName": "入门",
       "note": ""
     },
     {
       "name": "刷手机(Chokutter Addiction)",
       "url": "https://atcoder.jp/contests/abc443/tasks/abc443_c",
-      "algorithms": [],
-      "difficulty": "",
-      "status": "未开始",
+      "algorithms": [
+        "模拟"
+      ],
+      "difficulty": 2,
+      "difficultyName": "普及-",
       "note": ""
     },
     {
       "name": "棋子队列(Pawn Line)",
       "url": "https://atcoder.jp/contests/abc443/tasks/abc443_d",
-      "algorithms": [],
-      "difficulty": "",
-      "status": "未开始",
+      "algorithms": [
+        "贪心"
+      ],
+      "difficulty": 3,
+      "difficultyName": "普及",
       "note": ""
     },
     {
       "name": "攀银(Climbing Silver)",
       "url": "https://atcoder.jp/contests/abc443/tasks/abc443_e",
-      "algorithms": [],
-      "difficulty": "",
-      "status": "未开始",
+      "algorithms": [
+        "DP",
+        "BFS"
+      ],
+      "difficulty": 4,
+      "difficultyName": "普及+/提高-",
       "note": ""
     },
     {
+      "pid": "P16267",
       "name": "位数求和（P16267 [蓝桥杯 2026 省 Python B 组] 位数求和）",
       "url": "https://www.luogu.com.cn/problem/P16267",
-      "algorithms": [],
-      "difficulty": "",
-      "status": "未开始",
+      "algorithms": [
+        "单调栈"
+      ],
+      "difficulty": 4,
+      "difficultyName": "普及+/提高-",
       "note": ""
     },
     {
       "name": "非递增数(Non-Increasing Number)",
       "url": "https://atcoder.jp/contests/abc443/tasks/abc443_f",
-      "algorithms": [],
-      "difficulty": "",
-      "status": "未开始",
+      "algorithms": [
+        "DP",
+        "BFS",
+        "图论建模",
+        "剪枝"
+      ],
+      "difficulty": 4,
+      "difficultyName": "普及+/提高-",
       "note": ""
     }
   ]

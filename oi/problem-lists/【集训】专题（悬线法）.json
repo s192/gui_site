@@ -2,8 +2,11 @@
   "version": 2,
   "name": "【集训】专题（悬线法）",
   "description": "",
+  "tags": [
+    "DP"
+  ],
   "difficultySystem": "luogu-2026（0 暂无评定 / 1 入门 / 2 普及- / 3 普及 / 4 普及+/提高- / 5 提高 / 6 提高+/省选- / 7 省选/NOI- / 8 NOI/NOI+/CTS）",
-  "exportedAt": "2026-10-08T07:51:20.605Z",
+  "exportedAt": "2026-10-09T01:37:33.977Z",
   "problems": [
     {
       "name": "柱状图中最大的矩形",
