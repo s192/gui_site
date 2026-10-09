@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>题单管理器 · 离线版（洛谷难度）</title>
+<title>题单编辑器</title>
 <style>
 :root{
   --bg:#f5f6f8; --panel:#ffffff; --panel-2:#fafbfc; --text:#1f2328; --muted:#6b7280;
@@ -49,8 +49,19 @@ aside,section.card{background:var(--panel); border:1px solid var(--border); bord
 aside{padding:10px; position:sticky; top:64px}
 @media (max-width:860px){ aside{position:static} }
 .side-title{font-size:12px; color:var(--muted); padding:4px 6px 8px; display:flex; justify-content:space-between; align-items:center}
+.tag-filter{display:flex; flex-wrap:wrap; gap:4px; padding:0 4px 8px; border-bottom:1px dashed var(--border); margin-bottom:8px}
+.tag-filter:empty{display:none}
+.set-item{flex-wrap:wrap}
+.set-tags{width:100%; display:flex; flex-wrap:wrap; gap:3px; padding-left:0}
+.set-tags .t{font-size:10px; background:var(--chip); border:1px solid var(--border); border-radius:99px; padding:0 6px; color:var(--muted)}
+.set-item.active .set-tags .t{background:transparent; border-color:var(--accent); color:var(--accent)}
+.tagbar{display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin-top:10px}
+.tagbar .lbl{font-size:12px; color:var(--muted)}
+.tagbar input{border:1px solid var(--border); background:var(--panel-2); border-radius:99px; padding:3px 10px; width:150px}
+.tagbar input:focus{outline:none; border-color:var(--accent)}
+.tagbar .suggest{width:100%; display:flex; flex-wrap:wrap; gap:4px; align-items:center}
 .set-list{display:flex; flex-direction:column; gap:4px; max-height:52vh; overflow:auto}
-.set-item{display:flex; align-items:center; gap:6px; padding:7px 9px; border-radius:8px; cursor:pointer; border:1px solid transparent}
+.set-item{display:flex; align-items:center; gap:6px; padding:7px 9px; border-radius:8px; cursor:pointer; border:1px solid transparent; flex-wrap:wrap}
 .set-item:hover{background:var(--panel-2)}
 .set-item.active{background:var(--accent-soft); border-color:var(--accent); color:var(--accent); font-weight:600}
 .set-item .nm{flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
@@ -178,6 +189,7 @@ code{background:var(--chip); border-radius:4px; padding:0 4px; font-size:12px}
 <div class="layout">
   <aside>
     <div class="side-title"><span>我的题单</span><span id="setCount"></span></div>
+    <div class="tag-filter" id="tagFilter"></div>
     <div class="set-list" id="setList"></div>
   </aside>
 
@@ -187,6 +199,8 @@ code{background:var(--chip); border-radius:4px; padding:0 4px; font-size:12px}
         <input class="big-input" id="setName" placeholder="题单名称（点击可编辑）">
       </div>
       <textarea class="desc-input" id="setDesc" rows="2" placeholder="题单简介 / 使用说明（可选）"></textarea>
+
+      <div class="tagbar" id="setTags"></div>
 
       <div class="stats">
         <div class="stat">共 <b id="stTotal">0</b> 题</div>
@@ -237,6 +251,7 @@ code{background:var(--chip); border-radius:4px; padding:0 4px; font-size:12px}
     <input type="file" id="fileInput" accept=".json,application/json" hidden>
     <textarea class="ta" id="importText" placeholder='{
   "name": "动态规划入门",
+  "tags": ["洛谷", "冲刺省选"],
   "problems": [
     {"pid":"P1048","title":"采药","difficulty":4,"algorithms":["动态规划","背包"],"note":"01 背包模板"},
     {"name":"最长回文子串","url":"https://leetcode.cn/problems/longest-palindromic-substring/","difficulty":"普及+/提高-","algorithms":["字符串"]}
@@ -385,14 +400,23 @@ function nameFromUrl(u){
     return (m || '').replace(/[-_]/g,' ').replace(/\b\w/g, function(c){ return c.toUpperCase(); }) || '';
   }catch(e){ return ''; }
 }
+function normTags(v){
+  var seen = {}, out = [];
+  toArr(v).forEach(function(t){
+    var k = String(t).trim();
+    if (k && !seen[k]){ seen[k] = 1; out.push(k); }
+  });
+  return out;
+}
 function normalizeSet(raw){
-  if (Array.isArray(raw)) return { name:'导入的题单', description:'', problems: raw.map(normProblem) };
+  if (Array.isArray(raw)) return { name:'导入的题单', description:'', tags: [], problems: raw.map(normProblem) };
   var o = (raw && typeof raw === 'object') ? raw : {};
   var arr = pick(o, ['problems','questions','list','items','problemList','data','rows','题目集合','题目列表']);
   if (!Array.isArray(arr)) arr = [];
   return {
     name: String(pick(o, ['name','title','题单名称','名称']) || '未命名题单'),
     description: String(pick(o, ['description','desc','说明','简介','描述']) || ''),
+    tags: normTags(pick(o, ['tags','tag','labels','题单标签','标签'])),
     problems: arr.map(normProblem)
   };
 }
@@ -400,11 +424,12 @@ function cloneProblem(p){ return { _id:uid(), name:p.name, url:p.url, algorithms
 
 /* ===== 状态 ===== */
 var state = { sets: [], activeId: null, theme: 'light' };
-var filter = { q:'', diff:-1, algo:'', sort:'order' };
+var filter = { q:'', diff:-1, algo:'', sort:'order', tag:'' };
 
 function sampleSet(){
   return {
     id: uid(), name:'示例：动态规划 20 题', description:'双击标题即可改名；这是个示例题单，可随时删除。',
+    tags: ['动态规划', '洛谷'],
     problems: [
       { _id:uid(), name:'P1048 采药', url:'https://www.luogu.com.cn/problem/P1048', algorithms:['动态规划','背包 DP'], difficulty:4, note:'01 背包模板题，一维数组记得倒序枚举。' },
       { _id:uid(), name:'最长回文子串', url:'https://leetcode.cn/problems/longest-palindromic-substring/', algorithms:['动态规划','字符串'], difficulty:4, note:'中心扩散更好写。' },
@@ -420,6 +445,7 @@ function load(){
       if (d && Array.isArray(d.sets) && d.sets.length){
         state.sets = d.sets.map(function(s){
           return { id: s.id || uid(), name: s.name || '未命名题单', description: s.description || '',
+                   tags: normTags(s.tags),
                    problems: (s.problems || []).map(normProblem) };
         });
         state.activeId = d.activeId;
@@ -451,20 +477,78 @@ function getSet(){
 /* ===== 渲染 ===== */
 function renderAll(){ renderSide(); renderSet(); renderStats(); renderTable(); }
 
+/* 全部题单标签 → {标签: 题单数} */
+function allTags(){
+  var m = {};
+  state.sets.forEach(function(s){ (s.tags || []).forEach(function(t){ m[t] = (m[t] || 0) + 1; }); });
+  return Object.keys(m).sort(function(a,b){ return m[b] - m[a] || a.localeCompare(b, 'zh'); })
+    .map(function(k){ return { tag: k, n: m[k] }; });
+}
+function visibleSets(){
+  if (!filter.tag) return state.sets;
+  return state.sets.filter(function(s){ return s.id === state.activeId || (s.tags || []).indexOf(filter.tag) >= 0; });
+}
 function renderSide(){
-  document.getElementById('setList').innerHTML = state.sets.map(function(s){
+  var tags = allTags();
+  if (filter.tag && !tags.some(function(x){ return x.tag === filter.tag; })) filter.tag = '';
+  document.getElementById('tagFilter').innerHTML = tags.length
+    ? '<span class="hint">按标签筛选题单：</span>' + tags.map(function(x){
+        return '<span class="chip' + (filter.tag === x.tag ? ' on' : '') + '" data-ftag="' + esc(x.tag) + '">' +
+          esc(x.tag) + '<span class="n">' + x.n + '</span></span>';
+      }).join('')
+    : '';
+
+  var list = visibleSets();
+  document.getElementById('setList').innerHTML = list.map(function(s){
+    var ts = (s.tags || []).slice(0, 3).map(function(t){ return '<span class="t">' + esc(t) + '</span>'; }).join('');
     return '<div class="set-item' + (s.id === state.activeId ? ' active' : '') + '" data-id="' + s.id + '">' +
       '<span class="nm" title="' + esc(s.name) + '">' + esc(s.name) + '</span>' +
       '<span class="cnt">' + s.problems.length + '</span>' +
-      '<button class="del-set" data-del="' + s.id + '" title="删除题单">✕</button></div>';
+      '<button class="del-set" data-del="' + s.id + '" title="删除题单">✕</button>' +
+      (ts ? '<span class="set-tags">' + ts + '</span>' : '') + '</div>';
   }).join('');
-  document.getElementById('setCount').textContent = state.sets.length + ' 个';
+  document.getElementById('setCount').textContent = filter.tag
+    ? (list.length + '/' + state.sets.length + ' 个')
+    : (state.sets.length + ' 个');
 }
 function renderSet(){
   var s = getSet(); if (!s) return;
   var nm = document.getElementById('setName'), ds = document.getElementById('setDesc');
   if (nm.value !== s.name) nm.value = s.name;
   if (ds.value !== (s.description || '')) ds.value = s.description || '';
+  renderSetTags();
+}
+function renderSetTags(){
+  var s = getSet(), box = document.getElementById('setTags');
+  if (!s){ box.innerHTML = ''; return; }
+  var cur = s.tags || [];
+  var chips = cur.map(function(t){
+    return '<span class="chip on" data-rtag="' + esc(t) + '">' + esc(t) + '<span class="x" data-rtag="' + esc(t) + '">✕</span></span>';
+  }).join('');
+  var rest = allTags().filter(function(x){ return cur.indexOf(x.tag) < 0; });
+  var sug = rest.length
+    ? '<div class="suggest"><span class="hint">点已有标签快速添加：</span>' + rest.map(function(x){
+        return '<span class="chip" data-atag="' + esc(x.tag) + '">' + esc(x.tag) + '<span class="n">' + x.n + '</span></span>';
+      }).join('') + '</div>'
+    : '';
+  box.innerHTML = '<span class="lbl">题单标签</span>' + chips +
+    '<input id="tagInput" list="tagList" placeholder="添加标签，回车确认">' +
+    '<datalist id="tagList">' + allTags().map(function(x){ return '<option value="' + esc(x.tag) + '"></option>'; }).join('') + '</datalist>' +
+    sug;
+}
+function addTags(text){
+  var s = getSet(); if (!s) return;
+  var cur = s.tags || [];
+  var add = normTags(text).filter(function(t){ return cur.indexOf(t) < 0; });
+  if (!add.length) return;
+  s.tags = cur.concat(add);
+  renderSetTags(); renderSide(); save();
+}
+function removeTag(t){
+  var s = getSet(); if (!s) return;
+  s.tags = (s.tags || []).filter(function(x){ return x !== t; });
+  if (filter.tag === t && !allTags().some(function(x){ return x.tag === t; })) filter.tag = '';
+  renderSetTags(); renderSide(); save();
 }
 function currentList(){
   var s = getSet(); if (!s) return [];
@@ -664,9 +748,38 @@ document.getElementById('algoStat').addEventListener('click', function(e){
   if (el) toggleAlgo(el.getAttribute('data-falgo'));
 });
 
+/* 侧栏标签筛选 */
+document.getElementById('tagFilter').addEventListener('click', function(e){
+  var el = e.target.closest && e.target.closest('[data-ftag]'); if (!el) return;
+  var t = el.getAttribute('data-ftag');
+  filter.tag = (filter.tag === t) ? '' : t;
+  renderSide();
+});
+/* 题单标签编辑 */
+var setTagsBox = document.getElementById('setTags');
+setTagsBox.addEventListener('click', function(e){
+  var el = e.target.closest && e.target.closest('[data-rtag]');
+  if (el){ removeTag(el.getAttribute('data-rtag')); return; }
+  var at = e.target.closest && e.target.closest('[data-atag]');
+  if (at){ addTags(at.getAttribute('data-atag')); return; }
+});
+setTagsBox.addEventListener('keydown', function(e){
+  if (e.target.id !== 'tagInput') return;
+  if (e.key === 'Enter' || e.key === ',' || e.key === '，' || e.key === '、'){
+    e.preventDefault();
+    addTags(e.target.value);
+    e.target.value = '';
+  }
+});
+setTagsBox.addEventListener('blur', function(e){
+  if (e.target.id === 'tagInput' && e.target.value.trim()){
+    addTags(e.target.value); e.target.value = '';
+  }
+}, true);
+
 /* ===== 题单操作 ===== */
 document.getElementById('btnNew').onclick = function(){
-  var s = { id: uid(), name:'新题单 ' + (state.sets.length + 1), description:'', problems: [] };
+  var s = { id: uid(), name:'新题单 ' + (state.sets.length + 1), description:'', tags: [], problems: [] };
   state.sets.push(s); state.activeId = s.id;
   renderAll(); save(); toast('已创建新题单');
 };
@@ -676,7 +789,7 @@ document.getElementById('setList').addEventListener('click', function(e){
     var s = null; for (var i=0;i<state.sets.length;i++) if (state.sets[i].id === del) s = state.sets[i];
     if (s && confirm('删除题单「' + s.name + '」？不可恢复。')){
       state.sets = state.sets.filter(function(x){ return x.id !== del; });
-      if (!state.sets.length) state.sets.push({ id: uid(), name:'新题单', description:'', problems: [] });
+      if (!state.sets.length) state.sets.push({ id: uid(), name:'新题单', description:'', tags: [], problems: [] });
       if (state.activeId === del) state.activeId = state.sets[0].id;
       renderAll(); save();
     }
@@ -724,6 +837,7 @@ function exportObj(){
     version: 2,
     name: s.name,
     description: s.description || '',
+    tags: (s.tags || []).slice(),
     difficultySystem: 'luogu-2026（0 暂无评定 / 1 入门 / 2 普及- / 3 普及 / 4 普及+/提高- / 5 提高 / 6 提高+/省选- / 7 省选/NOI- / 8 NOI/NOI+/CTS）',
     exportedAt: new Date().toISOString(),
     problems: s.problems.map(function(p){
@@ -748,6 +862,7 @@ function exportJson(){
 function exportMd(){
   var o = exportObj(); if (!o) return;
   var lines = ['# ' + o.name, ''];
+  if (o.tags && o.tags.length) lines.push('标签：' + o.tags.map(function(t){ return '`' + t + '`'; }).join(' '), '');
   if (o.description) lines.push('> ' + o.description, '');
   lines.push('| # | 题目 | 链接 | 算法 | 难度 | 备注 |');
   lines.push('|---:|------|------|------|------|------|');
@@ -849,10 +964,15 @@ function doImport(text, mode){
   arr.map(normalizeSet).forEach(function(ns){
     if (mode === 'merge'){
       var cur = getSet();
-      if (cur){ ns.problems.forEach(function(p){ cur.problems.push(p); n++; }); }
-      else { state.sets.push({ id: uid(), name: ns.name, description: ns.description, problems: ns.problems }); n += ns.problems.length; }
+      if (cur){
+        ns.problems.forEach(function(p){ cur.problems.push(p); n++; });
+        ns.tags.forEach(function(t){ if (cur.tags.indexOf(t) < 0) cur.tags.push(t); });
+      } else {
+        state.sets.push({ id: uid(), name: ns.name, description: ns.description, tags: ns.tags, problems: ns.problems });
+        n += ns.problems.length;
+      }
     } else {
-      state.sets.push({ id: uid(), name: ns.name, description: ns.description, problems: ns.problems });
+      state.sets.push({ id: uid(), name: ns.name, description: ns.description, tags: ns.tags, problems: ns.problems });
       state.activeId = state.sets[state.sets.length-1].id;
       n += ns.problems.length;
     }
