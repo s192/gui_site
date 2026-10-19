@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>洛谷比赛 · 团队成绩看板 · JSON 上传版</title>
+<style>
+:root{
+  --bg:#0f1420; --panel:#171d2b; --panel2:#1e2537; --line:#2a3348;
+  --txt:#e8ecf5; --sub:#93a0bb; --brand:#4a9eff; --brand2:#6ee7b7;
+  --ok:#22c55e; --pa:#f59e0b; --wa:#ef4444; --none:#3b4560;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:radial-gradient(1200px 600px at 10% -10%,#1b2540 0%,var(--bg) 55%);color:var(--txt);
+  font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Segoe UI",sans-serif;
+  min-height:100vh;padding:28px 20px 60px;}
+.wrap{max-width:1280px;margin:0 auto}
+header{margin-bottom:18px}
+h1{font-size:25px;font-weight:700;letter-spacing:.5px}
+h1 span{color:var(--brand)}
+.sub{color:var(--sub);font-size:13px;margin-top:6px;line-height:1.8}
+.badge{display:inline-block;background:var(--panel2);border:1px solid var(--line);border-radius:999px;
+  padding:3px 10px;font-size:12px;color:var(--sub);margin:0 6px 6px 0}
+
+/* upload */
+.up{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:14px;margin:18px 0}
+.drop{background:linear-gradient(160deg,var(--panel2),var(--panel));border:1.5px dashed var(--line);
+  border-radius:16px;padding:18px;text-align:center;cursor:pointer;transition:.18s;position:relative}
+.drop.opt{border-color:#33405c}
+.drop:hover,.drop.over{border-color:var(--brand);background:#1c2942}
+.drop.done{border-style:solid;border-color:rgba(34,197,94,.5);background:rgba(34,197,94,.06)}
+.drop .ico{font-size:26px;line-height:1}
+.drop .t{font-weight:600;margin-top:8px;font-size:15px}
+.drop .d{color:var(--sub);font-size:12px;margin-top:5px;line-height:1.6}
+.drop .fn{margin-top:8px;font-size:12px;color:var(--brand2);word-break:break-all;min-height:16px}
+.drop input{display:none}
+.upbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:18px}
+button{background:var(--panel2);border:1px solid var(--line);color:var(--txt);border-radius:10px;
+  padding:9px 14px;font-size:13px;cursor:pointer;font-family:inherit;transition:.15s}
+button:hover{border-color:var(--brand);color:var(--brand)}
+button.primary{background:linear-gradient(90deg,#2f6fd0,#4a9eff);border-color:transparent;color:#fff;font-weight:600}
+button.primary:hover{filter:brightness(1.1);color:#fff}
+.err{background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.35);color:#fca5a5;
+  border-radius:12px;padding:10px 14px;font-size:13px;margin-bottom:14px;display:none;white-space:pre-wrap}
+
+/* contest info */
+.ci{background:linear-gradient(150deg,#1d2740,var(--panel));border:1px solid var(--line);
+  border-radius:16px;padding:16px 18px;margin-bottom:16px}
+.ci .cn{font-size:18px;font-weight:700;line-height:1.4}
+.ci .cm{color:var(--sub);font-size:12.5px;margin-top:8px;line-height:1.9}
+.ci .cm b{color:var(--txt);font-weight:600}
+.plist{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.warn{margin-top:10px;font-size:12.5px;color:#fbbf24;background:rgba(245,158,11,.1);
+  border:1px solid rgba(245,158,11,.3);border-radius:9px;padding:8px 12px;line-height:1.6}
+.pitem{display:flex;align-items:center;gap:8px;background:var(--panel2);border:1px solid var(--line);
+  border-radius:10px;padding:7px 12px;font-size:13px}
+.pno{width:22px;height:22px;border-radius:6px;background:linear-gradient(135deg,#2f6fd0,#4a9eff);
+  color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex:none}
+.pname{font-weight:500}
+.diff{font-size:11px;padding:2px 7px;border-radius:5px}
+.d1{color:#9ca3af;background:#232a3b}.d2{color:#6ee7b7;background:rgba(110,231,183,.12)}
+.d3{color:#7dd3fc;background:rgba(125,211,252,.12)}.d4{color:#93c5fd;background:rgba(147,197,253,.12)}
+.d5{color:#c4b5fd;background:rgba(196,181,253,.14)}.d6{color:#fca5a5;background:rgba(252,165,165,.14)}
+.d7{color:#f87171;background:rgba(248,113,113,.16)}.d8{color:#fb7185;background:rgba(251,113,133,.18)}
+.d0{color:#6b7280;background:#232a3b}
+
+/* stats */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px}
+.card{background:linear-gradient(160deg,var(--panel2),var(--panel));border:1px solid var(--line);
+  border-radius:14px;padding:14px 16px}
+.card .k{font-size:12px;color:var(--sub);margin-bottom:6px}
+.card .v{font-size:24px;font-weight:700}
+.card .v small{font-size:13px;color:var(--sub);font-weight:400}
+.bar{height:6px;border-radius:4px;background:var(--none);margin-top:8px;overflow:hidden}
+.bar i{display:block;height:100%;border-radius:4px;background:linear-gradient(90deg,var(--brand),var(--brand2))}
+
+/* table */
+.toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:14px}
+input[type=text],select{background:var(--panel2);border:1px solid var(--line);color:var(--txt);
+  border-radius:10px;padding:9px 12px;font-size:14px;outline:none;font-family:inherit}
+input[type=text]{min-width:210px}
+input[type=text]:focus,select:focus{border-color:var(--brand)}
+.spacer{flex:1}
+.count{color:var(--sub);font-size:13px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{background:var(--panel2);color:var(--sub);font-weight:600;font-size:12.5px;text-align:left;
+  padding:10px;white-space:nowrap;cursor:pointer;user-select:none;border-bottom:1px solid var(--line)}
+th:hover{color:var(--brand)}
+th .pno{display:inline-block;margin-right:5px;vertical-align:-4px}
+th .pn{display:block;font-size:11px;color:#6b7899;font-weight:400;margin-top:2px;white-space:nowrap}
+th .ar{opacity:.3;font-size:10px}
+th.act{color:var(--brand)}
+th.act .ar{opacity:1;color:var(--brand)}
+td{padding:10px;border-bottom:1px solid #232b3d;vertical-align:middle}
+tbody tr:hover{background:#1b2233}
+tbody tr.dim{opacity:.5}
+.usr{display:flex;align-items:center;gap:10px}
+.av{width:32px;height:32px;border-radius:50%;object-fit:cover;background:var(--none);flex:none}
+.un{font-weight:600}
+.un a{color:inherit;text-decoration:none}
+.un a:hover{color:var(--brand)}
+.uid{font-size:11px;color:var(--sub)}
+.muted{color:var(--sub)}
+.tag{display:inline-block;font-size:11px;padding:2px 8px;border-radius:6px;border:1px solid var(--line);color:var(--sub)}
+.tag.t2{color:#c4b5fd;border-color:#4c3f83;background:#241f3d}
+.tag.t3{color:#fcd34d;border-color:#6b5320;background:#2e2413}
+.tag.t0{color:#8fa0c0}
+.tag.cheat{color:#fca5a5;border-color:#7f2d2d;background:rgba(239,68,68,.14)}
+.rk{font-weight:700;font-variant-numeric:tabular-nums;font-size:14px}
+.rk.r1{color:#fcd34d}.rk.r2{color:#cbd5e1}.rk.r3{color:#d8a07a}
+.rkn{display:block;font-size:11px;color:var(--sub);font-weight:400;margin-top:1px}
+.sc{display:inline-flex;align-items:center;justify-content:center;min-width:52px;height:28px;
+  border-radius:8px;font-variant-numeric:tabular-nums;font-weight:600;font-size:13px}
+.s100{background:rgba(34,197,94,.16);color:#4ade80;border:1px solid rgba(34,197,94,.35)}
+.spart{background:rgba(245,158,11,.16);color:#fbbf24;border:1px solid rgba(245,158,11,.35)}
+.s0{background:rgba(239,68,68,.13);color:#f87171;border:1px solid rgba(239,68,68,.28)}
+.sna{background:transparent;color:#5b6784;border:1px dashed #39435e}
+.tm{font-size:11px;color:var(--sub);display:block;margin-top:2px;text-align:center}
+.tot{font-weight:700;font-variant-numeric:tabular-nums}
+.empty-row td{text-align:center;color:var(--sub);padding:40px}
+.hidden{display:none!important}
+footer{margin-top:18px;color:#5b6784;font-size:12px;text-align:center;line-height:1.9}
+@media(max-width:860px){.wrap{overflow-x:auto}table{min-width:920px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1><span>洛谷比赛 · 团队成绩看板</span> · 上传 JSON 生成</h1>
+  <div class="sub">上传洛谷 JSON：<b>团队文件</b>（members + 备注/实名）、<b>比赛榜单文件</b>（scoreboard 或 rows）、<b>比赛信息文件</b>（比赛名称与题目列表，可选）。顺序可颠倒，系统按字段自动识别；数据只在浏览器本地解析，不会上传。</div>
+  <div class="sub" id="meta"></div>
+</header>
+
+<div class="err" id="err"></div>
+
+<div class="up">
+  <div class="drop" id="d1">
+    <div class="ico">📥</div>
+    <div class="t">团队 JSON</div>
+    <div class="d">点击选择，或把文件拖到这里</div>
+    <div class="d">（从洛谷团队中获取）</div>
+    <div class="fn"></div>
+    <input type="file" accept=".json,application/json">
+  </div>
+  <div class="drop" id="d2">
+    <div class="ico">📥</div>
+    <div class="t">比赛榜单 JSON</div>
+    <div class="d">点击选择，或把文件拖到这里</div>
+    <div class="d">（从洛谷榜单对应JS调试中获取）</div>
+    <div class="fn"></div>
+    <input type="file" accept=".json,application/json">
+  </div>
+  <div class="drop opt" id="d3">
+    <div class="ico">📄</div>
+    <div class="t">比赛信息 JSON（可选）</div>
+    <div class="d">用于显示比赛名称、时间与题号题名</div>
+    <div class="d">（从洛谷比赛HTML中获取）</div>
+    <div class="fn"></div>
+    <input type="file" accept=".json,application/json">
+  </div>
+</div>
+
+<div class="upbar">
+  <button id="reset">清空重来</button>
+  <span class="spacer"></span>
+  <span class="count" id="tip">等待上传团队 JSON 与比赛榜单 JSON…</span>
+</div>
+
+<div id="main" class="hidden">
+  <div class="ci" id="ci"></div>
+  <div class="cards" id="cards"></div>
+  <div class="toolbar">
+    <input type="text" id="q" placeholder="搜索洛谷 ID、备注名或题号…">
+    <select id="ftype">
+      <option value="">全部身份</option>
+      <option value="1">成员</option>
+      <option value="2">教师</option>
+      <option value="3">团长</option>
+      <option value="0">其他</option>
+    </select>
+    <select id="fstat">
+      <option value="">全部状态</option>
+      <option value="attend">已参赛</option>
+      <option value="absent">未参赛</option>
+      <option value="ac">有满分题</option>
+      <option value="zero">参赛但 0 分</option>
+    </select>
+    <select id="sort">
+      <option value="rank">按榜单名次排序</option>
+      <option value="score">按总分排序</option>
+      <option value="name">按 ID 排序</option>
+      <option value="realName">按备注名排序</option>
+      <option value="time">按 AC 总用时排序</option>
+    </select>
+    <button id="asc">降序 ↓</button>
+    <button id="xlsx">导出 XLSX</button>
+    <span class="spacer"></span>
+    <span class="count" id="cnt"></span>
+  </div>
+  <div class="panel">
+    <table>
+      <thead><tr id="head"></tr></thead>
+      <tbody id="body"></tbody>
+    </table>
+  </div>
+</div>
+
+<footer>备注名取自团队条目中的实名信息 · 得分列显示「分数 / AC 用时」 · 导出为 XLSX（不含 UID 与身份列）· 支持 .json 文件，数据不离开本机</footer>
+</div>
+
+<script>
+const TYPE_LABEL = {1:'成员', 2:'教师', 3:'团长'};
+const DIFF = {0:'暂无',1:'入门',2:'普及−',3:'普及/提高−',4:'普及+/提高',5:'提高+/省选−',6:'省选/NOI−',7:'NOI/NOI+',8:'NOI/CTSC'};
+const METHOD = {1:'OI 赛制', 2:'ICPC 赛制', 3:'IOI 赛制'};
+const $ = id => document.getElementById(id);
+
+let ROWS = [], META = null, PIDS = [], PMAP = {}, MAX = 400;
+let asc = false, sortKey = 'score';
+const files = {team:null, board:null, info:null};
+
+/* ---------- 解析 ---------- */
+function readJSON(file){
+  return new Promise((res, rej) => {
+    const fr = new FileReader();
+    fr.onload = () => { try { res(JSON.parse(fr.result)); } catch(e){ rej(new Error('JSON 解析失败：' + e.message)); } };
+    fr.onerror = () => rej(new Error('文件读取失败'));
+    fr.readAsText(file, 'utf-8');
+  });
+}
+function pick(o, key){
+  if(!o || typeof o !== 'object') return null;
+  if(o[key] !== undefined) return o[key];
+  if(o.data && o.data[key] !== undefined) return o.data[key];
+  return null;
+}
+function rowsOf(o){
+  const r = pick(o,'scoreboard') || pick(o,'rows');
+  if(Array.isArray(r) && r.length) return r;
+  if(Array.isArray(o) && o.length && o[0] && o[0].user && o[0].details) return o;
+  return null;
+}
+function detect(o){
+  if(pick(o,'members')) return 'team';
+  if(rowsOf(o)) return 'board';
+  if(pick(o,'contestProblems') || pick(o,'contest')) return 'info';
+  return null;
+}
+function getMembers(o){
+  const m = pick(o,'members');
+  if(!m) return null;
+  return Array.isArray(m) ? m : (m.result || m.data || null);
+}
+function ts2str(t){
+  const d = new Date(t * 1000);
+  const p = n => String(n).padStart(2,'0');
+  return d.getFullYear() + '-' + p(d.getMonth()+1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+}
+// 去掉题名前方的 [SCP-S 2026] 之类比赛标签
+function cleanName(s){
+  return String(s || '').replace(/^\s*\[[^\]]*\]\s*/, '').trim();
+}
+
+function build(teamObj, boardObj, infoObj, boardName){
+  const members = getMembers(teamObj);
+  if(!Array.isArray(members) || !members.length) throw new Error('团队文件中没有找到成员列表（members.result）');
+  const sbRaw = rowsOf(boardObj);
+  if(!sbRaw) throw new Error('比赛榜单文件中没有找到 scoreboard / rows 数组');
+
+  // 榜单数组顺序即名次，第几位就是第几名（不并列）
+  const sb = {}, pset = [];
+  sbRaw.forEach((s, i) => {
+    const u = s.user || {};
+    sb[u.uid] = {row: s, rank: i + 1};
+    Object.keys(s.details || {}).forEach(p => { if(!pset.includes(p)) pset.push(p); });
+  });
+  const TOTAL_RANK = sbRaw.length;
+
+  // 题号顺序：优先用比赛信息文件的 contestProblems
+  let probs = [], info = null, mismatch = false;
+  const cps = infoObj ? (pick(infoObj,'contestProblems') || (pick(infoObj,'contest')||{}).contestProblems) : null;
+  if(Array.isArray(cps) && cps.length){
+    probs = cps.map((c, i) => {
+      const p = c.problem || c;
+      return {pid: p.pid, no: c.no || String.fromCharCode(65+i), name: cleanName(p.name),
+              full: p.fullScore || 100, diff: p.difficulty || 0};
+    });
+    // 比赛信息文件与榜单题目完全对不上时，以榜单为准并提示
+    mismatch = !probs.some(p => pset.includes(p.pid));
+    if(mismatch) probs = pset.slice().sort().map((pid, i) =>
+      ({pid: pid, no: String.fromCharCode(65+i), name: pid, full: 100, diff: 0}));
+    else{
+      // 榜单里出现但题目表里没有的题，补在后面
+      pset.forEach(pid => { if(!probs.some(x => x.pid === pid)) probs.push({pid: pid, no: pid, name: pid, full: 100, diff: 0}); });
+    }
+    const ct = pick(infoObj,'contest') || {};
+    info = {name: ct.name || '', host: (ct.host||{}).name || '', start: ct.startTime || 0, end: ct.endTime || 0,
+            method: METHOD[ct.method] || '', rated: ct.rated === 3 || ct.rated === 1, total: ct.totalParticipants || 0,
+            id: ct.id || ''};
+  }else{
+    probs = pset.slice().sort().map((pid, i) => ({pid: pid, no: String.fromCharCode(65+i), name: pid, full: 100, diff: 0}));
+  }
+  PIDS = probs.map(p => p.pid);
+  PMAP = {};
+  probs.forEach(p => PMAP[p.pid] = p);
+  MAX = probs.reduce((s,p) => s + p.full, 0) || 100;
+
+  ROWS = members.map(m => {
+    const u = m.user || m;
+    const hit = sb[u.uid];
+    const s = hit ? hit.row : null;
+    const d = {};
+    if(s) PIDS.forEach(p => {
+      const x = (s.details || {})[p];
+      d[p] = x ? {score: x.score, time: x.runningTime} : null;
+    });
+    return {
+      uid: u.uid, name: u.name || '(无名)', avatar: u.avatar || '',
+      realName: (m.realName || m.real_name || m.nickname || '').trim(),
+      ccfLevel: u.ccfLevel || 0, banned: !!u.isBanned, cheater: u.color === 'Cheater',
+      type: m.type === undefined ? 0 : m.type,
+      typeLabel: TYPE_LABEL[m.type] || '其他',
+      rank: hit ? hit.rank : null,
+      score: s ? s.score : null,
+      runningTime: s ? (s.runningTime || 0) : null,
+      details: d
+    };
+  });
+
+  const tm = pick(teamObj,'team') || {};
+  const ts = boardObj.at || (boardObj.data && boardObj.data.at);
+  META = {
+    teamName: tm.name || '未命名团队', teamId: tm.id || '-',
+    contestId: (info && info.id) || boardObj.id || '-',
+    at: ts ? ts2str(ts) : '-',
+    contest: info, mismatch: mismatch,
+    totalRank: TOTAL_RANK,
+    boardName: (boardName || '').replace(/\.json$/i, '')
+  };
+}
+
+/* ---------- 上传交互 ---------- */
+function slot(el){
+  const input = el.querySelector('input');
+  const label = el.querySelector('.t'), fnEl = el.querySelector('.fn');
+  el.onclick = e => { if(e.target !== input) input.click(); };
+  input.onchange = () => { const f = input.files[0]; if(f) handle(f); };
+  ['dragenter','dragover'].forEach(ev => el.addEventListener(ev, e => { e.preventDefault(); el.classList.add('over'); }));
+  ['dragleave','drop'].forEach(ev => el.addEventListener(ev, e => { e.preventDefault(); el.classList.remove('over'); }));
+  el.addEventListener('drop', e => { const f = e.dataTransfer.files[0]; if(f) handle(f); });
+  const NAME = {team:'团队 JSON', board:'比赛榜单 JSON', info:'比赛信息 JSON'};
+
+  async function handle(f){
+    showErr('');
+    try{
+      const obj = await readJSON(f);
+      const k = detect(obj);
+      if(!k) throw new Error('无法识别该文件类型：找不到 members / scoreboard / rows / contestProblems，请确认是洛谷团队、榜单或比赛 JSON');
+      if(files[k] && files[k].el !== el){
+        files[k].el.classList.remove('done'); files[k].el.querySelector('.fn').textContent = '';
+      }
+      files[k] = {obj: obj, el: el, name: f.name};
+      el.classList.add('done');
+      fnEl.textContent = '✓ ' + f.name;
+      label.textContent = NAME[k] + '（已就绪）';
+      if(files.team && files.board) go();
+      else{
+        const miss = [];
+        if(!files.team) miss.push('团队');
+        if(!files.board) miss.push('榜单');
+        $('tip').textContent = '已收到「' + NAME[k] + '」，还差' + miss.join('、') + '文件…';
+      }
+    }catch(e){ showErr(f.name + '：' + e.message); }
+  }
+}
+['d1','d2','d3'].forEach(id => slot($(id)));
+
+function showErr(msg){ const e = $('err'); e.textContent = msg; e.style.display = msg ? 'block' : 'none'; }
+
+function go(){
+  try{ build(files.team.obj, files.board.obj, files.info ? files.info.obj : null, files.board.name); }
+  catch(e){ showErr('合并失败：' + e.message); return; }
+  $('main').classList.remove('hidden');
+  renderContest();
+  $('tip').textContent = '已加载 ' + ROWS.length + ' 名成员 · ' + PIDS.length + ' 道题 · 榜单共 ' + META.totalRank + ' 人';
+  sortKey = 'rank'; asc = true;
+  syncAsc(); head(); render();
+}
+function syncAsc(){
+  $('asc').textContent = asc ? '升序 ↑' : '降序 ↓';
+  $('sort').value = ['rank','score','name','realName','time'].includes(sortKey) ? sortKey : 'rank';
+}
+function renderContest(){
+  const c = META.contest;
+  let h = '<div class="cn">' + (c && c.name ? c.name : (META.boardName || '（未提供比赛信息文件）')) + '</div>';
+  const b = [];
+  if(c){
+    if(c.id) b.push('<span class="badge">比赛 ID ' + c.id + '</span>');
+    if(c.host) b.push('<span class="badge">主办 ' + c.host + '</span>');
+    if(c.start && c.end){
+      const mins = Math.round((c.end - c.start) / 60);
+      b.push('<span class="badge">时间 ' + ts2str(c.start) + ' ~ ' + ts2str(c.end).slice(11) + '（' +
+        Math.floor(mins/60) + ' 小时' + (mins%60 ? ' ' + (mins%60) + ' 分' : '') + '）</span>');
+    }
+    if(c.method) b.push('<span class="badge">' + c.method + '</span>');
+    if(c.rated) b.push('<span class="badge">计入等级分</span>');
+    if(c.total) b.push('<span class="badge">官方参赛 ' + c.total + ' 人</span>');
+  }
+  if(META.totalRank) b.push('<span class="badge">榜单 ' + META.totalRank + ' 人</span>');
+  b.push('<span class="badge">团队 ' + META.teamName + '（ID ' + META.teamId + '）</span>');
+  b.push('<span class="badge">榜单时间 ' + META.at + '</span>');
+  h += '<div class="cm">' + b.join('') + '</div>';
+  if(META.mismatch) h += '<div class="warn">⚠ 比赛信息文件里的题目与榜单题号不匹配，已按榜单题目显示（题名可能不准），请确认上传的是本场比赛的比赛信息 JSON。</div>';
+  h += '<div class="plist">' + PIDS.map(pid => {
+    const p = PMAP[pid];
+    return '<div class="pitem"><span class="pno">' + p.no + '</span>' +
+      '<span class="pname">' + (p.name || pid) + '</span>' +
+      '<span class="diff d' + p.diff + '">' + (DIFF[p.diff] || '') + '</span>' +
+      '<span class="muted">' + pid + ' · ' + p.full + ' 分</span></div>';
+  }).join('') + '</div>';
+  $('ci').innerHTML = h;
+}
+
+$('reset').onclick = () => {
+  files.team = files.board = files.info = null; ROWS = [];
+  [['d1','团队 JSON'],['d2','比赛榜单 JSON'],['d3','比赛信息 JSON（可选）']].forEach(([id, t]) => {
+    const el = $(id); el.classList.remove('done'); el.querySelector('.fn').textContent = '';
+    el.querySelector('.t').textContent = t; el.querySelector('input').value = '';
+  });
+  $('main').classList.add('hidden'); showErr('');
+  $('tip').textContent = '等待上传团队 JSON 与比赛榜单 JSON…';
+};
+
+/* ---------- 渲染 ---------- */
+function val(r, k){
+  if(k === 'rank') return r.rank === null ? Infinity : r.rank;
+  if(k === 'name') return (r.name || '').toLowerCase();
+  if(k === 'realName') return (r.realName || '￿').toLowerCase();
+  if(k === 'score') return r.score === null ? -1 : r.score;
+  if(k === 'time') return r.runningTime === null ? Infinity : (r.runningTime || Infinity);
+  if(PIDS.includes(k)) return r.details[k] ? r.details[k].score : -1;
+  return 0;
+}
+function fmtTime(s){
+  if(!s) return '';
+  return Math.floor(s/60) + ':' + String(s%60).padStart(2,'0');
+}
+function renderCards(list){
+  const att = list.filter(r => r.score !== null);
+  const sum = att.reduce((s,r) => s + r.score, 0);
+  const best = att.length ? Math.max(...att.map(r => r.score)) : 0;
+  const avg = att.length ? Math.round(sum / att.length) : 0;
+  const ac = PIDS.map(p => list.filter(r => r.details[p] && r.details[p].score === PMAP[p].full).length);
+  const ranks = list.filter(r => r.rank !== null).map(r => r.rank);
+  const bestRank = ranks.length ? Math.min(...ranks) : null;
+  const cards = [
+    {k:'团队总人数', v:list.length, s:'人'},
+    {k:'团队最好名次', v: bestRank === null ? '—' : bestRank,
+     s: bestRank === null ? '' : '/ ' + (META && META.totalRank ? META.totalRank : '?') + ' 人'},
+    {k:'已参赛', v:att.length, s:'/ ' + list.length + ' 人', bar: list.length ? att.length/list.length : 0},
+    {k:'团队总分', v:sum, s:'/ ' + (MAX * list.length) + ' 分'},
+    {k:'最高个人分', v:best, s:'分', bar: best/MAX},
+    {k:'人均得分', v:avg, s:'分（参赛者）'},
+    {k:'满分题人次', v:ac.reduce((a,b)=>a+b,0),
+     s:PIDS.map((p,i) => PMAP[p].no + ':' + ac[i]).join('  ')}
+  ];
+  $('cards').innerHTML = cards.map(c =>
+    '<div class="card"><div class="k">' + c.k + '</div><div class="v">' + c.v +
+    '<small> ' + (c.s||'') + '</small></div>' +
+    (c.bar !== undefined ? '<div class="bar"><i style="width:' + Math.round(c.bar*100) + '%"></i></div>' : '') +
+    '</div>').join('');
+}
+function head(){
+  const cols = [{k:'rank',t:'名次',s:'榜单 ' + (META && META.totalRank ? META.totalRank : '?') + ' 人'},
+    {k:'name',t:'洛谷 ID',s:''},{k:'realName',t:'备注名',s:''},{k:'type',t:'身份',s:''},
+    {k:'score',t:'总分',s:'满分 ' + MAX}]
+    .concat(PIDS.map(p => ({k:p, t:PMAP[p].no + (PMAP[p].name ? ' ' + PMAP[p].name : ''), s:PMAP[p].pid})))
+    .concat([{k:'time',t:'总用时',s:''}]);
+  $('head').innerHTML = cols.map(c =>
+    '<th data-k="' + c.k + '" class="' + (c.k===sortKey?'act':'') + '" title="' + c.k + '">' +
+    (PIDS.includes(c.k) ? '<span class="pno">' + PMAP[c.k].no + '</span>' : '') + c.t +
+    (c.s ? '<span class="pn">' + c.s + '</span>' : '') +
+    '<span class="ar"> ' + (c.k===sortKey ? (asc?'▲':'▼') : '▼') + '</span></th>').join('');
+  document.querySelectorAll('th').forEach(th => th.onclick = () => {
+    const k = th.dataset.k;
+    if(sortKey === k) asc = !asc;
+    else { sortKey = k; asc = (k === 'name' || k === 'realName' || k === 'rank' || k === 'time'); }
+    syncAsc(); head(); render();
+  });
+}
+function rankHTML(r){
+  if(r.rank === null) return '<span class="muted">—</span>';
+  const cls = r.rank === 1 ? 'r1' : (r.rank === 2 ? 'r2' : (r.rank === 3 ? 'r3' : ''));
+  const medal = r.rank === 1 ? '🥇' : (r.rank === 2 ? '🥈' : (r.rank === 3 ? '🥉' : ''));
+  return '<span class="rk ' + cls + '">' + (medal || r.rank) + '</span>' +
+    (medal ? '<span class="rkn">' + r.rank + '</span>' : '');
+}
+function cell(r, p){
+  const d = r.details[p];
+  if(!d) return '<span class="sc sna">—</span>';
+  const full = PMAP[p].full;
+  const cls = d.score >= full ? 's100' : (d.score > 0 ? 'spart' : 's0');
+  return '<div><span class="sc ' + cls + '">' + d.score + '</span>' +
+    (d.score >= full ? '<span class="tm">' + fmtTime(d.time) + '</span>' : '') + '</div>';
+}
+function filtered(){
+  const q = $('q').value.trim().toLowerCase();
+  const ft = $('ftype').value, fs = $('fstat').value;
+  return ROWS.filter(r => {
+    if(q){
+      const hit = (r.name||'').toLowerCase().includes(q) || (r.realName||'').toLowerCase().includes(q) ||
+        PIDS.some(p => (PMAP[p].no + ' ' + PMAP[p].name + ' ' + p).toLowerCase().includes(q));
+      if(!hit) return false;
+    }
+    if(ft && String(r.type) !== ft) return false;
+    if(fs === 'attend' && r.score === null) return false;
+    if(fs === 'absent' && r.score !== null) return false;
+    if(fs === 'ac' && !PIDS.some(p => r.details[p] && r.details[p].score >= PMAP[p].full)) return false;
+    if(fs === 'zero' && !(r.score !== null && r.score === 0)) return false;
+    return true;
+  });
+}
+function render(){
+  const list = filtered();
+  list.sort((x,y) => {
+    const a = val(x, sortKey), b = val(y, sortKey);
+    const c = (typeof a === 'string') ? a.localeCompare(b, 'zh') : (a - b);
+    return asc ? c : -c;
+  });
+  renderCards(ROWS);
+  $('cnt').textContent = '显示 ' + list.length + ' / ' + ROWS.length + ' 人';
+  $('body').innerHTML = list.length ? list.map(r =>
+    '<tr class="' + (r.score === null ? 'dim' : '') + '">' +
+      '<td>' + rankHTML(r) + '</td>' +
+      '<td><div class="usr"><img class="av" src="' + r.avatar + '" alt="" loading="lazy" onerror="this.style.visibility=\'hidden\'">' +
+        '<div><div class="un"><a href="https://www.luogu.com.cn/user/' + r.uid + '" target="_blank">' + r.name + '</a>' +
+        (r.banned ? ' <span class="tag">已封禁</span>' : '') +
+        (r.cheater ? ' <span class="tag cheat">作弊标记</span>' : '') + '</div>' +
+        '<div class="uid">UID ' + r.uid + (r.ccfLevel ? ' · CCF ' + r.ccfLevel + '级' : '') + '</div></div></div></td>' +
+      '<td>' + (r.realName ? r.realName : '<span class="muted">未填写</span>') + '</td>' +
+      '<td><span class="tag t' + r.type + '">' + r.typeLabel + '</span></td>' +
+      '<td class="tot">' + (r.score === null ? '<span class="muted">—</span>' : r.score) + '</td>' +
+      PIDS.map(p => '<td>' + cell(r,p) + '</td>').join('') +
+      '<td class="muted">' + (r.runningTime ? fmtTime(r.runningTime) : '—') + '</td>' +
+    '</tr>').join('')
+    : '<tr class="empty-row"><td colspan="' + (7 + PIDS.length) + '">没有符合条件的成员</td></tr>';
+}
+/* ---------- XLSX 导出（纯前端生成，无依赖） ---------- */
+const CRCT = (() => {
+  const t = new Uint32Array(256);
+  for(let n = 0; n < 256; n++){
+    let c = n;
+    for(let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+    t[n] = c >>> 0;
+  }
+  return t;
+})();
+function crc32(u8){
+  let c = 0xFFFFFFFF;
+  for(let i = 0; i < u8.length; i++) c = CRCT[(c ^ u8[i]) & 0xFF] ^ (c >>> 8);
+  return (c ^ 0xFFFFFFFF) >>> 0;
+}
+function u8(str){ return new TextEncoder().encode(str); }
+// 打包为 zip（仅存储，不压缩）
+function zip(files){
+  const parts = [], central = [];
+  let off = 0;
+  const now = new Date();
+  const dt = ((now.getHours() << 11) | (now.getMinutes() << 5) | (now.getSeconds() >> 1)) & 0xFFFF;
+  const dd = (((now.getFullYear() - 1980) << 9) | ((now.getMonth() + 1) << 5) | now.getDate()) & 0xFFFF;
+  files.forEach(f => {
+    const name = u8(f.name), data = f.data, crc = crc32(data);
+    const lh = new Uint8Array(30 + name.length);
+    const v = new DataView(lh.buffer);
+    v.setUint32(0, 0x04034b50, true); v.setUint16(4, 20, true); v.setUint16(6, 0x0800, true);
+    v.setUint16(8, 0, true); v.setUint16(10, dt, true); v.setUint16(12, dd, true);
+    v.setUint32(14, crc, true); v.setUint32(18, data.length, true); v.setUint32(22, data.length, true);
+    v.setUint16(26, name.length, true); v.setUint16(28, 0, true);
+    lh.set(name, 30);
+    parts.push(lh, data);
+
+    const ch = new Uint8Array(46 + name.length);
+    const cv = new DataView(ch.buffer);
+    cv.setUint32(0, 0x02014b50, true); cv.setUint16(4, 20, true); cv.setUint16(6, 20, true);
+    cv.setUint16(8, 0x0800, true); cv.setUint16(10, 0, true);
+    cv.setUint16(12, dt, true); cv.setUint16(14, dd, true);
+    cv.setUint32(16, crc, true); cv.setUint32(20, data.length, true); cv.setUint32(24, data.length, true);
+    cv.setUint16(28, name.length, true); cv.setUint16(30, 0, true); cv.setUint16(32, 0, true);
+    cv.setUint16(34, 0, true); cv.setUint16(36, 0, true); cv.setUint32(38, 0, true);
+    cv.setUint32(42, off, true);
+    ch.set(name, 46);
+    central.push(ch);
+
+    off += lh.length + data.length;
+  });
+  const cdSize = central.reduce((s, c) => s + c.length, 0);
+  const eocd = new Uint8Array(22);
+  const ev = new DataView(eocd.buffer);
+  ev.setUint32(0, 0x06054b50, true); ev.setUint16(4, 0, true); ev.setUint16(6, 0, true);
+  ev.setUint16(8, files.length, true); ev.setUint16(10, files.length, true);
+  ev.setUint32(12, cdSize, true); ev.setUint32(16, off, true); ev.setUint16(20, 0, true);
+  return new Blob(parts.concat(central, [eocd]), {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+}
+function xesc(s){
+  return String(s === null || s === undefined ? '' : s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function colLetter(i){
+  let s = '';
+  i++;
+  while(i > 0){ const m = (i - 1) % 26; s = String.fromCharCode(65 + m) + s; i = Math.floor((i - 1) / 26); }
+  return s;
+}
+function sheetXML(head, rows){
+  const nCol = head.length;
+  let cols = '<cols>';
+  const widths = [7, 16, 12, 8].concat(PIDS.map(() => 12)).concat([10]);
+  widths.slice(0, nCol).forEach((w, i) => { cols += '<col min="' + (i+1) + '" max="' + (i+1) + '" width="' + w + '" customWidth="1"/>'; });
+  cols += '</cols>';
+  let body = '<row r="1" ht="24" customHeight="1">' + head.map((h, i) =>
+    '<c r="' + colLetter(i) + '1" s="1" t="inlineStr"><is><t xml:space="preserve">' + xesc(h) + '</t></is></c>').join('') + '</row>';
+  rows.forEach((r, ri) => {
+    const rn = ri + 2;
+    body += '<row r="' + rn + '">' + r.map((cellv, ci) => {
+      const ref = colLetter(ci) + rn;
+      if(typeof cellv === 'number' && isFinite(cellv))
+        return '<c r="' + ref + '" s="2"><v>' + cellv + '</v></c>';
+      if(cellv === '' || cellv === null || cellv === undefined) return '<c r="' + ref + '" s="2"/>';
+      return '<c r="' + ref + '" s="2" t="inlineStr"><is><t xml:space="preserve">' + xesc(cellv) + '</t></is></c>';
+    }).join('') + '</row>';
+  });
+  return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
+    '<sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>' +
+    '<sheetFormatPr defaultRowHeight="18"/>' + cols +
+    '<sheetData>' + body + '</sheetData>' +
+    '<autoFilter ref="A1:' + colLetter(nCol - 1) + Math.max(1, rows.length + 1) + '"/>' +
+    '</worksheet>';
+}
+function xlsx(){
+  if(!ROWS.length){ showErr('还没有数据可导出'); return; }
+  const list = filtered().slice().sort((x, y) => {
+    const a = val(x, sortKey), b = val(y, sortKey);
+    const c = (typeof a === 'string') ? a.localeCompare(b, 'zh') : (a - b);
+    return asc ? c : -c;
+  });
+  // 名次在总分之前
+  const head = ['名次', '洛谷ID', '备注名', '总分']
+    .concat(PIDS.map(p => PMAP[p].no + (PMAP[p].name ? ' ' + PMAP[p].name : PMAP[p].pid)))
+    .concat(['总用时(s)']);
+  const rows = list.map(r => [r.rank === null ? '' : r.rank, r.name, r.realName || '', r.score === null ? '' : r.score]
+    .concat(PIDS.map(p => r.details[p] ? r.details[p].score : ''))
+    .concat([r.runningTime || '']));
+
+  const CT = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
+    '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' +
+    '<Default Extension="xml" ContentType="application/xml"/>' +
+    '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>' +
+    '<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>' +
+    '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>' +
+    '</Types>';
+  const RELS = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+    '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>';
+  const WB = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">' +
+    '<sheets><sheet name="成绩" sheetId="1" r:id="rId1"/></sheets></workbook>';
+  const WBRELS = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+    '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>' +
+    '<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>';
+  // s1 表头加粗+底色，s2 居中
+  const STYLES = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
+    '<fonts count="2"><font><sz val="11"/><name val="等线"/></font>' +
+    '<font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="等线"/></font></fonts>' +
+    '<fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill>' +
+    '<fill><patternFill patternType="solid"><fgColor rgb="FF2F6FD0"/><bgColor indexed="64"/></patternFill></fill></fills>' +
+    '<borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>' +
+    '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>' +
+    '<cellXfs count="3">' +
+    '<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>' +
+    '<xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1"><alignment horizontal="center" vertical="center"/></xf>' +
+    '<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>' +
+    '</cellXfs><cellStyles count="1"><cellStyle name="常规" xfId="0" builtinId="0"/></cellStyles></styleSheet>';
+
+  const blob = zip([
+    {name:'[Content_Types].xml', data:u8(CT)},
+    {name:'_rels/.rels', data:u8(RELS)},
+    {name:'xl/workbook.xml', data:u8(WB)},
+    {name:'xl/_rels/workbook.xml.rels', data:u8(WBRELS)},
+    {name:'xl/styles.xml', data:u8(STYLES)},
+    {name:'xl/worksheets/sheet1.xml', data:u8(sheetXML(head, rows))}
+  ]);
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = (META && META.teamName ? META.teamName : '团队') + '_成绩.xlsx';
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 3000);
+}
+['q','ftype','fstat'].forEach(id => $(id).addEventListener('input', render));
+$('sort').onchange = e => {
+  sortKey = e.target.value;
+  asc = (sortKey === 'rank' || sortKey === 'name' || sortKey === 'realName' || sortKey === 'time');
+  syncAsc(); head(); render();
+};
+$('asc').onclick = () => { asc = !asc; syncAsc(); head(); render(); };
+$('xlsx').onclick = xlsx;
+</script>
+</body>
+</html>
