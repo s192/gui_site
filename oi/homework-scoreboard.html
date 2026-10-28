@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>洛谷作业成绩展示</title>
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        background: #f0f2f5;
+        padding: 20px;
+        color: #333;
+    }
+    h1 { text-align: center; margin-bottom: 20px; color: #1a1a1a; }
+    .upload-section { display: flex; gap: 16px; margin-bottom: 20px; flex-wrap: wrap; }
+    .upload-area {
+        flex: 1; min-width: 240px;
+        border: 2px dashed #409eff; border-radius: 8px;
+        padding: 20px 16px; text-align: center; background: #fff;
+        cursor: pointer; transition: all 0.3s; position: relative;
+    }
+    .upload-area.member-area { border-color: #e6a23c; }
+    .upload-area.problem-area { border-color: #67c23a; }
+    .upload-area:hover, .upload-area.dragover { border-color: #67c23a; background: #f0f9ff; }
+    .upload-area.member-area:hover, .upload-area.member-area.dragover { border-color: #409eff; background: #fdf6ec; }
+    .upload-area.problem-area:hover, .upload-area.problem-area.dragover { border-color: #409eff; background: #f0f9ff; }
+    .upload-area input { display: none; }
+    .upload-tip { color: #909399; margin-top: 8px; font-size: 12px; }
+    .upload-title { font-size: 15px; font-weight: 600; color: #303133; margin-bottom: 5px; }
+    .file-tag {
+        display: inline-block; background: #ecf5ff; color: #409eff;
+        border: 1px solid #b3d8ff; border-radius: 4px;
+        padding: 2px 8px; margin: 3px 2px; font-size: 12px; max-width: 90%;
+        overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: middle;
+    }
+    .file-tag .remove { margin-left: 5px; cursor: pointer; color: #f56c6c; font-weight: bold; }
+    .file-tag .remove:hover { color: #c0392b; }
+    #controls { display: none; margin-bottom: 15px; align-items: center; gap: 15px; flex-wrap: wrap; }
+    #controls.show { display: flex; }
+    #search { padding: 8px 15px; border: 1px solid #dcdfe6; border-radius: 4px; font-size: 14px; width: 250px; }
+    #sort-info { font-size: 13px; color: #909399; }
+    .toolbar { margin-left: auto; display: flex; gap: 10px; }
+    .btn-tool {
+        padding: 8px 16px; border: 1px solid #dcdfe6; border-radius: 4px;
+        background: #fff; color: #303133; font-size: 14px; cursor: pointer;
+        transition: all 0.2s;
+    }
+    .btn-tool:hover { background: #409eff; color: #fff; border-color: #409eff; }
+    .btn-tool.copied { background: #67c23a; color: #fff; border-color: #67c23a; }
+    .table-wrapper { overflow-x: auto; background: #fff; border-radius: 8px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+    table {
+        table-layout: fixed; width: max-content; min-width: 100%;
+        border-collapse: collapse; font-size: 14px;
+    }
+    thead th {
+        background: #409eff; color: #fff; padding: 10px 6px;
+        cursor: pointer; user-select: none; position: sticky; top: 0; z-index: 10;
+        vertical-align: middle; text-align: center; line-height: 1.3;
+        word-break: break-all;
+    }
+    thead th:hover { background: #66b1ff; }
+    /* 各列宽度 */
+    th.col-rank { width: 44px; }
+    th.col-name { width: 90px; }
+    th.col-user { width: 120px; }
+    th.col-total { width: 70px; }
+    th.col-prob { width: 76px; }
+    th.col-del { width: 50px; }
+    .th-pid { display: block; font-weight: 700; font-size: 13px; }
+    .th-name {
+        font-weight: 400; font-size: 11px; opacity: 0.9;
+        margin-top: 3px; line-height: 1.25;
+        /* 长题目名：最多两行，超出省略 */
+        display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+        overflow: hidden; word-break: break-all;
+    }
+    tbody tr:nth-child(even) { background: #fafafa; }
+    tbody tr:hover { background: #ecf5ff; }
+    tbody td {
+        padding: 8px 6px; text-align: center; border-bottom: 1px solid #ebeef5;
+        overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    /* 姓名/用户名左对齐、允许换行 */
+    tbody td.cell-name, tbody td.cell-user { text-align: left; white-space: normal; word-break: break-all; }
+    tbody td.cell-total { font-weight: bold; }
+    tbody td.cell-prob { padding: 8px 4px; }
+    .score-full { color: #67c23a; font-weight: bold; }
+    .score-zero { color: #f56c6c; font-weight: bold; }
+    .score-partial { color: #e6a23c; }
+    .score-null { color: #c0c4cc; }
+    .rank { display: inline-block; width: 24px; height: 24px; line-height: 24px; border-radius: 50%; background: #909399; color: #fff; font-size: 12px; text-align: center; }
+    .rank-1 { background: #f56c6c; }
+    .rank-2 { background: #e6a23c; }
+    .rank-3 { background: #409eff; }
+    .total-score { font-weight: bold; color: #303133; font-size: 15px; }
+    .row-no-score { background: #fdf6ec !important; }
+    .row-no-score:hover { background: #faecd8 !important; }
+    .badge-no-score { color: #e6a23c; font-size: 11px; }
+    #stats { display: none; margin-top: 15px; padding: 15px; background: #fff; border-radius: 8px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); font-size: 14px; color: #606266; }
+    #stats.show { display: flex; flex-wrap: wrap; }
+    #stats span { margin-right: 20px; }
+    .step-hint { font-size: 12px; color: #909399; margin-top: 10px; text-align: center; }
+    .btn-del {
+        display: inline-block; border: none; background: #fef0f0; color: #f56c6c;
+        width: 26px; height: 26px; line-height: 26px; border-radius: 4px;
+        cursor: pointer; font-size: 15px; font-weight: bold; transition: all 0.2s;
+    }
+    .btn-del:hover { background: #f56c6c; color: #fff; }
+    .row-deleted { display: none; }
+    #undoBar {
+        display: none; margin-bottom: 12px; padding: 10px 15px; background: #fef0f0;
+        border: 1px solid #fbc4c4; border-radius: 6px; font-size: 13px; color: #f56c6c;
+        align-items: center; gap: 12px; flex-wrap: wrap;
+    }
+    #undoBar.show { display: flex; }
+    #undoBar .undo-item {
+        background: #fff; border: 1px solid #fbc4c4; border-radius: 4px;
+        padding: 2px 8px; cursor: pointer; color: #409eff;
+    }
+    #undoBar .undo-item:hover { background: #ecf5ff; }
+    #undoBar .undo-clear { margin-left: auto; cursor: pointer; color: #909399; }
+    #undoBar .undo-clear:hover { color: #f56c6c; }
+    .btn-paste {
+        margin-top: 10px; padding: 5px 14px; font-size: 12px;
+        border: 1px dashed #c0c4cc; border-radius: 4px; background: #fff;
+        color: #606266; cursor: pointer; transition: all 0.2s;
+    }
+    .btn-paste:hover { border-color: #409eff; color: #409eff; background: #ecf5ff; }
+    /* 粘贴面板 */
+    #pastePanel {
+        display: none; position: fixed; inset: 0; z-index: 100;
+        background: rgba(0,0,0,0.4); align-items: center; justify-content: center;
+    }
+    #pastePanel.show { display: flex; }
+    .paste-box {
+        background: #fff; border-radius: 10px; padding: 22px; width: 560px; max-width: 92vw;
+        box-shadow: 0 8px 30px rgba(0,0,0,0.18);
+    }
+    .paste-title { font-size: 16px; font-weight: 600; color: #303133; margin-bottom: 6px; }
+    .paste-tip { font-size: 12px; color: #909399; margin-bottom: 12px; line-height: 1.5; }
+    #pasteArea {
+        width: 100%; height: 220px; padding: 10px; font-size: 12px;
+        border: 1px solid #dcdfe6; border-radius: 6px; resize: vertical;
+        font-family: Consolas, Monaco, "Courier New", monospace; line-height: 1.5;
+    }
+    #pasteArea:focus { outline: none; border-color: #409eff; }
+    .paste-hint { font-size: 12px; margin-top: 8px; min-height: 18px; color: #909399; }
+    .paste-hint.ok { color: #67c23a; }
+    .paste-hint.err { color: #f56c6c; }
+    .paste-actions { margin-top: 14px; display: flex; gap: 10px; justify-content: flex-end; }
+    .btn-primary { background: #409eff; color: #fff; border-color: #409eff; }
+    .btn-primary:hover { background: #66b1ff; border-color: #66b1ff; }
+    /* 轻量提示条 */
+    #toast {
+        position: fixed; left: 50%; bottom: 40px; transform: translateX(-50%) translateY(20px);
+        background: rgba(48,49,51,0.92); color: #fff; padding: 10px 20px;
+        border-radius: 6px; font-size: 14px; z-index: 200;
+        opacity: 0; pointer-events: none; transition: all 0.25s;
+    }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<h1>📊 洛谷作业成绩展示</h1>
+
+<div class="upload-section">
+    <label class="upload-area member-area" id="memberDropZone">
+        <input type="file" id="memberFileInput" accept=".json">
+        <div class="upload-title">👥 ① 团队成员（浏览器工具-网络-截取）</div>
+        <div>先上传：点击选择或拖拽成员 JSON</div>
+        <div class="upload-tip">读取 data.members.result，作为全员基准，成绩中未出现的成员也会展示</div>
+        <div id="memberFileTag"></div>
+        <button type="button" class="btn-paste" data-paste="1">📋 粘贴 JSON 文本</button>
+    </label>
+
+    <label class="upload-area" id="dropZone">
+        <input type="file" id="fileInput" accept=".json" multiple>
+        <div class="upload-title">📂 ② 成绩文件（可多选，浏览器工具-网络-截取）</div>
+        <div>再上传：点击选择或拖拽成绩 JSON</div>
+        <div class="upload-tip">支持多个成绩 JSON，按用户 uid 去重合并</div>
+        <div id="scoreFileTags"></div>
+        <button type="button" class="btn-paste" data-paste="1">📋 粘贴 JSON 文本</button>
+    </label>
+
+    <label class="upload-area problem-area" id="problemDropZone">
+        <input type="file" id="problemFileInput" accept=".json">
+        <div class="upload-title">📝 ③ 题目列表（作业页面-元素-搜索pro）</div>
+        <div>可选：点击选择题目列表 JSON</div>
+        <div class="upload-tip">自动识别 problems 数组（兼容根级 / data.training 嵌套）</div>
+        <div id="problemFileTag"></div>
+        <button type="button" class="btn-paste" data-paste="1">📋 粘贴 JSON 文本</button>
+    </label>
+</div>
+
+<div class="step-hint">推荐顺序：① 团队成员 → ② 成绩文件 → ③ 题目列表（① 和 ② 顺序可调，① 为必选）</div>
+
+<div id="controls">
+    <input type="text" id="search" placeholder="🔍 搜索姓名或用户名...">
+    <span id="sort-info"></span>
+    <span class="toolbar">
+        <button class="btn-tool" id="btnCopy" title="按总分从高到低排序后复制（含表头，可粘贴到 Excel / Word）">📋 复制表格</button>
+        <button class="btn-tool" id="btnExcel" title="按总分从高到低排序后导出（含表头）">📥 导出 Excel</button>
+    </span>
+</div>
+
+<div id="undoBar">
+    <span id="undoText"></span>
+    <span class="undo-clear" id="undoClear">全部撤销</span>
+</div>
+
+<div class="table-wrapper">
+    <table id="scoreTable">
+        <thead id="tableHead"></thead>
+        <tbody id="tableBody"></tbody>
+    </table>
+</div>
+
+<div id="stats"></div>
+
+<!-- 粘贴 JSON 面板 -->
+<div id="pastePanel">
+    <div class="paste-box">
+        <div class="paste-title">📋 粘贴 JSON 文本</div>
+        <div class="paste-tip">粘贴后自动识别类型（成员 / 成绩 / 题目列表），也可直接在页面按 Ctrl+V</div>
+        <textarea id="pasteArea" spellcheck="false" placeholder="在此粘贴 JSON 内容（Ctrl+V）…"></textarea>
+        <div class="paste-hint" id="pasteHint"></div>
+        <div class="paste-actions">
+            <button type="button" class="btn-tool btn-primary" id="pasteConfirm">识别并解析</button>
+            <button type="button" class="btn-tool" id="pasteCancel">取消</button>
+        </div>
+    </div>
+</div>
+
+<script>
+// ===== 状态 =====
+let members = [];           // 全员基准：[{uid, name, realName}, ...]
+let loadedFiles = [];       // 成绩文件列表
+let scoreByUid = new Map(); // uid -> 成绩行（合并去重后）
+let deletedUids = new Set();// 被删除的成员 uid
+let problemFile = null;
+let problemMap = {};        // pid -> name
+let problemOrder = [];      // 按 problems 数组顺序的 pid
+let sortCol = 'totalScore';
+let sortAsc = false;
+
+// ===== DOM =====
+const memberFileInput = document.getElementById('memberFileInput');
+const memberDropZone = document.getElementById('memberDropZone');
+const fileInput = document.getElementById('fileInput');
+const dropZone = document.getElementById('dropZone');
+const problemFileInput = document.getElementById('problemFileInput');
+const problemDropZone = document.getElementById('problemDropZone');
+const tableHead = document.getElementById('tableHead');
+const tableBody = document.getElementById('tableBody');
+const searchInput = document.getElementById('search');
+const sortInfo = document.getElementById('sort-info');
+const controls = document.getElementById('controls');
+const stats = document.getElementById('stats');
+const memberFileTag = document.getElementById('memberFileTag');
+const scoreFileTags = document.getElementById('scoreFileTags');
+const problemFileTag = document.getElementById('problemFileTag');
+const undoBar = document.getElementById('undoBar');
+const undoText = document.getElementById('undoText');
+const undoClear = document.getElementById('undoClear');
+const btnCopy = document.getElementById('btnCopy');
+const btnExcel = document.getElementById('btnExcel');
+
+// ===== 成员文件 =====
+memberFileInput.addEventListener('change', e => { if (e.target.files.length > 0) handleMemberFile(e.target.files[0]); });
+memberDropZone.addEventListener('dragover', e => { e.preventDefault(); memberDropZone.classList.add('dragover'); });
+memberDropZone.addEventListener('dragleave', () => memberDropZone.classList.remove('dragover'));
+memberDropZone.addEventListener('drop', e => {
+    e.preventDefault(); memberDropZone.classList.remove('dragover');
+    if (e.dataTransfer.files.length > 0) handleMemberFile(e.dataTransfer.files[0]);
+});
+
+// ===== 成绩文件 =====
+fileInput.addEventListener('change', e => { if (e.target.files.length > 0) Array.from(e.target.files).forEach(f => handleScoreFile(f)); });
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+dropZone.addEventListener('drop', e => {
+    e.preventDefault(); dropZone.classList.remove('dragover');
+    Array.from(e.dataTransfer.files).forEach(f => handleScoreFile(f));
+});
+
+// ===== 题目文件 =====
+problemFileInput.addEventListener('change', e => { if (e.target.files.length > 0) handleProblemFile(e.target.files[0]); });
+problemDropZone.addEventListener('dragover', e => { e.preventDefault(); problemDropZone.classList.add('dragover'); });
+problemDropZone.addEventListener('dragleave', () => problemDropZone.classList.remove('dragover'));
+problemDropZone.addEventListener('drop', e => {
+    e.preventDefault(); problemDropZone.classList.remove('dragover');
+    if (e.dataTransfer.files.length > 0) handleProblemFile(e.dataTransfer.files[0]);
+});
+
+searchInput.addEventListener('input', renderTable);
+btnCopy.addEventListener('click', copyTable);
+btnExcel.addEventListener('click', exportExcel);
+
+// ===== 删除 / 撤销 =====
+function deleteRow(uid) {
+    deletedUids.add(uid);
+    renderTable();
+}
+
+undoClear.addEventListener('click', () => {
+    deletedUids.clear();
+    renderTable();
+});
+
+// 点击撤销栏里的单个名字
+function bindUndoItems() {
+    undoBar.querySelectorAll('.undo-item').forEach(el => {
+        el.addEventListener('click', () => {
+            deletedUids.delete(Number(el.dataset.uid));
+            renderTable();
+        });
+    });
+}
+
+function updateUndoBar(rows) {
+    // 基于"完整行列表"判断已删除项（不能用过滤后的 rows，否则查不到）
+    const allRows = members.length > 0
+        ? members.map(m => ({ uid: m.uid, realName: m.realName, userName: m.name }))
+        : rows;
+    const deletedRows = allRows.filter(r => deletedUids.has(r.uid));
+    if (deletedRows.length === 0) {
+        undoBar.classList.remove('show');
+        return;
+    }
+    undoBar.classList.add('show');
+    undoText.innerHTML = `已删除 ${deletedRows.length} 条：${deletedRows.map(r =>
+        `<span class="undo-item" data-uid="${r.uid}">${escapeHtml(r.realName || r.userName)} ✕</span>`
+    ).join(' ')}`;
+    bindUndoItems();
+}
+
+// ===== 解析成员 =====
+function parseMembers(json) {
+    // 兼容：data.members.result（洛谷团队导出）或根级 members/result
+    const arr =
+        (json.data && json.data.members && Array.isArray(json.data.members.result)) ? json.data.members.result :
+        Array.isArray(json.members) ? json.members :
+        Array.isArray(json.result) ? json.result : null;
+    if (!arr) return null;
+    return arr.map(m => ({
+        uid: m.user?.uid,
+        name: m.user?.name || '',
+        realName: m.realName || m.user?.realName || '',
+    })).filter(m => m.uid);
+}
+
+// 应用成员数据（文件与粘贴共用）
+function applyMemberJson(json, name) {
+    const parsed = parseMembers(json);
+    if (!parsed || parsed.length === 0) return false;
+    members = parsed;
+    memberFileTag.innerHTML = `<span class="file-tag">${escapeHtml(name)}<span class="remove" id="removeMember">×</span></span>`;
+    document.getElementById('removeMember').addEventListener('click', e => {
+        e.preventDefault(); e.stopPropagation();
+        members = []; deletedUids.clear(); memberFileTag.innerHTML = ''; rebuild();
+    });
+    rebuild();
+    return true;
+}
+
+function handleMemberFile(file) {
+    if (!file.name.endsWith('.json')) { alert('请上传 .json 格式的文件'); return; }
+    const reader = new FileReader();
+    reader.onload = e => {
+        try {
+            const json = JSON.parse(e.target.result);
+            if (!applyMemberJson(json, file.name)) {
+                alert('成员 JSON 格式不正确：未找到成员列表（请确认结构为 data.members.result）');
+            }
+        } catch (err) { alert('成员 JSON 解析失败: ' + err.message); }
+    };
+    reader.readAsText(file);
+}
+
+// ===== 成绩文件 =====
+// 应用成绩数据（文件与粘贴共用）
+function applyScoreJson(json, name) {
+    if (!json.scoreboard || !Array.isArray(json.scoreboard)) return false;
+    loadedFiles.push({ name, data: json.scoreboard });
+    updateScoreFileTags();
+    mergeScores();
+    renderTable();
+    return true;
+}
+
+function handleScoreFile(file) {
+    if (!file.name.endsWith('.json')) { alert('请上传 .json 格式的文件'); return; }
+    const reader = new FileReader();
+    reader.onload = e => {
+        try {
+            const json = JSON.parse(e.target.result);
+            if (!applyScoreJson(json, file.name)) {
+                alert('JSON 格式不正确，缺少 scoreboard 数组: ' + file.name);
+            }
+        } catch (err) { alert('JSON 解析失败 (' + file.name + '): ' + err.message); }
+    };
+    reader.readAsText(file);
+}
+
+function updateScoreFileTags() {
+    scoreFileTags.innerHTML = loadedFiles.map((f, i) =>
+        `<span class="file-tag">${escapeHtml(f.name)}<span class="remove" data-idx="${i}">×</span></span>`
+    ).join('');
+    scoreFileTags.querySelectorAll('.remove').forEach(el => {
+        el.addEventListener('click', e => {
+            e.preventDefault(); e.stopPropagation();
+            loadedFiles.splice(parseInt(el.dataset.idx), 1);
+            updateScoreFileTags();
+            mergeScores();
+            renderTable();
+        });
+    });
+}
+
+// ===== 题目文件 =====
+function parseProblems(json) {
+    if (Array.isArray(json.problems)) return json.problems;
+    if (json.data && Array.isArray(json.data.training?.problems)) return json.data.training.problems;
+    return null;
+}
+
+// 应用题目数据（文件与粘贴共用）
+function applyProblemJson(json, name) {
+    const problems = parseProblems(json);
+    if (!problems) return false;
+    problemFile = name;
+    problemMap = {}; problemOrder = [];
+    problems.forEach(p => {
+        if (p.pid) { problemMap[p.pid] = p.name || p.pid; problemOrder.push(p.pid); }
+    });
+    if (problemOrder.length === 0) return false;
+    updateProblemFileTag();
+    renderTable();
+    return true;
+}
+
+function handleProblemFile(file) {
+    if (!file.name.endsWith('.json')) { alert('请上传 .json 格式的文件'); return; }
+    const reader = new FileReader();
+    reader.onload = e => {
+        try {
+            const json = JSON.parse(e.target.result);
+            const ok = applyProblemJson(json, file.name);
+            if (!ok) alert('题目 JSON 格式不正确：未找到有效的 problems 数组');
+        } catch (err) { alert('题目 JSON 解析失败: ' + err.message); }
+    };
+    reader.readAsText(file);
+}
+
+function updateProblemFileTag() {
+    problemFileTag.innerHTML = problemFile
+        ? `<span class="file-tag">${escapeHtml(problemFile)}<span class="remove" id="removeProblem">×</span></span>` : '';
+    const rm = document.getElementById('removeProblem');
+    if (rm) rm.addEventListener('click', e => {
+        e.preventDefault(); e.stopPropagation();
+        problemFile = null; problemMap = {}; problemOrder = [];
+        updateProblemFileTag(); renderTable();
+    });
+}
+
+// ===== 合并成绩（以成员为基准）=====
+function mergeScores() {
+    scoreByUid.clear();
+    loadedFiles.forEach(f => {
+        f.data.forEach(row => {
+            const uid = row.user?.uid;
+            if (!uid) return;
+            const existing = scoreByUid.get(uid);
+            if (!existing || (row.totalScore || 0) > (existing.totalScore || 0)) scoreByUid.set(uid, row);
+        });
+    });
+}
+
+// 组装最终展示行：成员全保留，挂上对应成绩
+function buildRows() {
+    if (members.length > 0) {
+        return members
+            .filter(m => !deletedUids.has(m.uid))
+            .map(m => {
+                const sc = scoreByUid.get(m.uid);
+                return {
+                    uid: m.uid,
+                    userName: m.name,
+                    realName: m.realName,
+                    score: sc ? sc.score : {},
+                    totalScore: sc ? (sc.totalScore || 0) : null,
+                    hasScore: !!sc,
+                };
+            });
+    }
+    // 未上传成员文件时，退化为仅显示有成绩的人
+    const seen = new Set();
+    const rows = [];
+    scoreByUid.forEach((sc, uid) => {
+        rows.push({
+            uid,
+            userName: sc.user?.name || '',
+            realName: (sc.teamMember && sc.teamMember.realName) || '',
+            score: sc.score || {},
+            totalScore: sc.totalScore || 0,
+            hasScore: true,
+        });
+        seen.add(uid);
+    });
+    return rows.filter(r => !deletedUids.has(r.uid));
+}
+
+function rebuild() { mergeScores(); renderTable(); }
+
+// ===== 渲染表格 =====
+function renderTable() {
+    const rows = buildRows();
+    if (rows.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="10" style="padding:40px;color:#909399;">请先上传团队成员 JSON，再上传成绩文件</td></tr>';
+        tableHead.innerHTML = '';
+        return;
+    }
+
+    controls.classList.add('show');
+    stats.classList.add('show');
+
+    const keyword = searchInput.value.trim().toLowerCase();
+    const filtered = rows.filter(r =>
+        r.realName.toLowerCase().includes(keyword) || r.userName.toLowerCase().includes(keyword)
+    );
+
+    filtered.sort((a, b) => {
+        let va, vb;
+        if (sortCol === 'realName') { va = a.realName; vb = b.realName; }
+        else if (sortCol === 'userName') { va = a.userName; vb = b.userName; }
+        else if (sortCol === 'totalScore') { va = a.totalScore == null ? -1 : a.totalScore; vb = b.totalScore == null ? -1 : b.totalScore; }
+        else { va = a.score?.[sortCol]; vb = b.score?.[sortCol]; va = va == null ? -1 : va; vb = vb == null ? -1 : vb; }
+        if (typeof va === 'string') return sortAsc ? va.localeCompare(vb) : vb.localeCompare(va);
+        return sortAsc ? va - vb : vb - va;
+    });
+
+    const displayProblems = problemOrder.length > 0 ? problemOrder : extractProblemsFromRows(rows);
+
+    let headHTML = '<tr><th class="col-rank" data-col="rank">#</th><th class="col-name" data-col="realName">姓名 ↕</th><th class="col-user" data-col="userName">用户名 ↕</th><th class="col-total" data-col="totalScore">总分 ↕</th>';
+    displayProblems.forEach(p => {
+        const pname = problemMap[p] || '';
+        const label = pname
+            ? `<span class="th-pid">${escapeHtml(p)}</span><span class="th-name">${escapeHtml(pname)}</span>`
+            : escapeHtml(p);
+        headHTML += `<th class="col-prob" data-col="${p}">${label} ↕</th>`;
+    });
+    headHTML += '<th class="col-del">操作</th></tr>';
+    tableHead.innerHTML = headHTML;
+
+    let bodyHTML = '';
+    filtered.forEach((r, i) => {
+        const rankClass = (i === 0 && r.hasScore) ? 'rank-1' : (i === 1 && r.hasScore) ? 'rank-2' : (i === 2 && r.hasScore) ? 'rank-3' : '';
+        const noScoreClass = r.hasScore ? '' : 'row-no-score';
+        const totalText = r.totalScore == null
+            ? '<span class="badge-no-score">未提交</span>'
+            : `<span class="total-score">${r.totalScore}</span>`;
+        let tr = `<tr class="${noScoreClass}">
+            <td class="col-rank"><span class="rank ${rankClass}">${i + 1}</span></td>
+            <td class="cell-name">${escapeHtml(r.realName)}</td>
+            <td class="cell-user">${escapeHtml(r.userName)}</td>
+            <td class="cell-total">${totalText}</td>`;
+        displayProblems.forEach(p => {
+            const s = r.score?.[p];
+            if (s == null) tr += '<td class="cell-prob score-null">—</td>';
+            else if (s === 100) tr += `<td class="cell-prob score-full">${s}</td>`;
+            else if (s === 0) tr += `<td class="cell-prob score-zero">${s}</td>`;
+            else tr += `<td class="cell-prob score-partial">${s}</td>`;
+        });
+        tr += `<td class="col-del"><button class="btn-del" data-uid="${r.uid}" title="删除该行">×</button></td></tr>`;
+        bodyHTML += tr;
+    });
+    tableBody.innerHTML = bodyHTML;
+
+    sortInfo.textContent = `排序：${getColName(sortCol)} ${sortAsc ? '↑' : '↓'}`;
+
+    tableHead.querySelectorAll('th').forEach(th => {
+        th.addEventListener('click', () => {
+            const col = th.dataset.col;
+            if (sortCol === col) sortAsc = !sortAsc;
+            else { sortCol = col; sortAsc = false; }
+            renderTable();
+        });
+    });
+
+    renderStats(rows);
+
+    // 绑定每行删除按钮
+    tableBody.querySelectorAll('.btn-del').forEach(btn => {
+        btn.addEventListener('click', e => {
+            e.stopPropagation();
+            deleteRow(Number(btn.dataset.uid));
+        });
+    });
+
+    updateUndoBar(rows);
+}
+
+function renderStats(rows) {
+    const total = rows.length;
+    const withScore = rows.filter(r => r.hasScore);
+    const noScore = total - withScore.length;
+    const avgScore = withScore.length > 0 ? Math.round(withScore.reduce((s, r) => s + (r.totalScore || 0), 0) / withScore.length) : 0;
+    const maxScore = withScore.length > 0 ? Math.max(...withScore.map(r => r.totalScore || 0)) : 0;
+    const perfectCount = withScore.filter(r => r.totalScore === 2100).length;
+    stats.innerHTML = `
+        <span>👥 团队总人数：${total}</span>
+        <span>📝 已提交：${withScore.length}</span>
+        ${noScore > 0 ? `<span>⚠️ 未提交：${noScore}</span>` : ''}
+        <span>📄 成绩文件数：${loadedFiles.length}</span>
+        ${problemOrder.length > 0 ? `<span>📚 题目数：${problemOrder.length}</span>` : ''}
+        <span>📈 平均分：${avgScore}</span>
+        <span>🏆 最高分：${maxScore}</span>
+        <span>💯 满分人数：${perfectCount}</span>`;
+}
+
+function extractProblemsFromRows(rows) {
+    const set = new Set();
+    rows.forEach(r => { Object.keys(r.score || {}).forEach(k => set.add(k)); });
+    return [...set];
+}
+
+function getColName(col) {
+    if (col === 'rank') return '#';
+    if (col === 'realName') return '姓名';
+    if (col === 'userName') return '用户名';
+    if (col === 'totalScore') return '总分';
+    return col;
+}
+
+function escapeHtml(str) {
+    const d = document.createElement('div');
+    d.textContent = str;
+    return d.innerHTML;
+}
+
+// ===== 粘贴 JSON =====
+const pastePanel = document.getElementById('pastePanel');
+const pasteArea = document.getElementById('pasteArea');
+const pasteHint = document.getElementById('pasteHint');
+const btnPasteConfirm = document.getElementById('pasteConfirm');
+const btnPasteCancel = document.getElementById('pasteCancel');
+
+// 三个上传区里的「粘贴」按钮：打开共用面板（自动识别类型）
+document.querySelectorAll('.btn-paste').forEach(btn => {
+    btn.addEventListener('click', e => {
+        e.preventDefault(); e.stopPropagation(); // 阻止触发外层 label 打开文件选择
+        openPastePanel();
+    });
+});
+
+function openPastePanel() {
+    pasteArea.value = '';
+    setPasteHint('', '');
+    pastePanel.classList.add('show');
+    pasteArea.focus();
+}
+
+function closePastePanel() { pastePanel.classList.remove('show'); }
+
+function setPasteHint(msg, cls) {
+    pasteHint.textContent = msg;
+    pasteHint.className = 'paste-hint' + (cls ? ' ' + cls : '');
+}
+
+btnPasteCancel.addEventListener('click', closePastePanel);
+pastePanel.addEventListener('click', e => { if (e.target === pastePanel) closePastePanel(); });
+
+// 识别 JSON 类型
+function detectJsonType(json) {
+    if (json.scoreboard && Array.isArray(json.scoreboard)) return 'score';
+    if (json.data?.members?.result || Array.isArray(json.members) || Array.isArray(json.result)) return 'member';
+    if (Array.isArray(json.problems) || json.data?.training?.problems) return 'problem';
+    return null;
+}
+
+// 尝试解析并应用粘贴的文本；返回类型名或 null
+function applyPastedText(text, silent) {
+    const trimmed = (text || '').trim();
+    if (!trimmed) return null;
+    let json;
+    try {
+        json = JSON.parse(trimmed);
+    } catch (err) {
+        if (!silent) alert('JSON 解析失败：' + err.message);
+        return null;
+    }
+    const type = detectJsonType(json);
+    if (!type) {
+        if (!silent) alert('无法识别 JSON 类型。\n请确保内容包含以下之一：\n· scoreboard（成绩）\n· data.members.result（成员）\n· problems（题目列表）');
+        return null;
+    }
+    let ok = false, label = '';
+    if (type === 'score') { ok = applyScoreJson(json, '粘贴的成绩'); label = '成绩'; }
+    else if (type === 'member') { ok = applyMemberJson(json, '粘贴的成员'); label = '成员'; }
+    else { ok = applyProblemJson(json, '粘贴的题目'); label = '题目列表'; }
+    if (!ok) {
+        if (!silent) alert('识别为「' + label + '」，但内容格式有误，解析失败');
+        return null;
+    }
+    return label;
+}
+
+btnPasteConfirm.addEventListener('click', () => {
+    setPasteHint('正在识别…', '');
+    const result = applyPastedText(pasteArea.value, false);
+    if (result) {
+        setPasteHint('✅ 已识别为「' + result + '」并载入', 'ok');
+        setTimeout(closePastePanel, 700);
+    } else {
+        setPasteHint('❌ 解析失败，请检查 JSON 内容', 'err');
+    }
+});
+
+// 全局粘贴：在页面任意位置 Ctrl+V 直接识别（输入框内除外）
+document.addEventListener('paste', e => {
+    const tag = (e.target.tagName || '').toUpperCase();
+    if (tag === 'INPUT' || tag === 'TEXTAREA') return; // 让输入框正常处理
+    const text = (e.clipboardData || window.clipboardData)?.getData('text');
+    if (!text || !text.trim()) return;
+    const result = applyPastedText(text, true); // 静默：非 JSON 不打扰用户
+    if (result) {
+        e.preventDefault();
+        showToast('✅ 已粘贴并载入「' + result + '」');
+    }
+});
+
+// 轻量提示条
+function showToast(msg) {
+    let t = document.getElementById('toast');
+    if (!t) {
+        t = document.createElement('div');
+        t.id = 'toast';
+        document.body.appendChild(t);
+    }
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(t._timer);
+    t._timer = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// ===== 导出相关 =====
+
+// 构建导出的二维数据矩阵（含表头，不含"操作"列）
+// 表头题目列格式：题号 + 换行 + 题目名（如 "B2064 斐波那契数列"）
+function buildExportMatrix() {
+    // 导出/复制始终按"总分从高到低"排序，未提交（null）排到最后；与页面当前点击排序无关
+    const allRows = buildRows().filter(r => !deletedUids.has(r.uid));
+    allRows.sort((a, b) => {
+        const sa = a.totalScore == null ? -1 : a.totalScore;
+        const sb = b.totalScore == null ? -1 : b.totalScore;
+        return sb - sa; // 降序
+    });
+    const displayProblems = problemOrder.length > 0 ? problemOrder : extractProblemsFromRows(allRows);
+
+    // 表头行
+    const header = ['#', '姓名', '用户名', '总分', ...displayProblems.map(p => {
+        const name = problemMap[p];
+        return name ? `${p} ${name}` : p;
+    })];
+
+    // 数据行（已按总分降序排好）
+    const data = allRows.map((r, i) => {
+        const totalText = r.totalScore == null ? '未提交' : String(r.totalScore);
+        const scoreCells = displayProblems.map(p => {
+            const s = r.score?.[p];
+            return s == null ? '' : String(s);
+        });
+        return [i + 1, r.realName, r.userName, totalText, ...scoreCells];
+    });
+
+    return [header, ...data];
+}
+
+// 将二维矩阵转为 CSV 文本（Excel 友好，单元格内含换行/逗号时自动加引号）
+function matrixToCSV(matrix) {
+    return matrix.map(row => row.map(cell => {
+        const s = String(cell == null ? '' : cell);
+        // 含逗号、引号、换行时需用双引号包裹并转义
+        if (/[",\n\r]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+        return s;
+    }).join(',')).join('\r\n');
+}
+
+// 触发浏览器下载
+function downloadFile(filename, content, mimeType) {
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+// 复制表格（制表符分隔，可直接粘贴到 Excel / Word，保留多行表头）
+async function copyTable() {
+    const matrix = buildExportMatrix();
+    if (matrix.length <= 1) { alert('暂无数据可复制'); return; }
+    const tsv = matrix.map(row => row.join('\t')).join('\r\n');
+    const btn = document.getElementById('btnCopy');
+    try {
+        if (navigator.clipboard && window.ClipboardItem) {
+            // 同时写入 text/plain 和 text/html，粘贴到 Excel/Word 自动分列
+            const html = '<table>' + matrix.map(row =>
+                '<tr>' + row.map(cell => `<td>${escapeHtml(cell)}</td>`).join('') + '</tr>'
+            ).join('') + '</table>';
+            await navigator.clipboard.write([
+                new ClipboardItem({
+                    'text/html': new Blob([html], { type: 'text/html' }),
+                    'text/plain': new Blob([tsv], { type: 'text/plain' }),
+                })
+            ]);
+        } else {
+            // fallback：创建临时 textarea
+            const ta = document.createElement('textarea');
+            ta.value = tsv; ta.style.position = 'fixed'; ta.style.opacity = '0';
+            document.body.appendChild(ta); ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+        }
+        btn.classList.add('copied');
+        const original = btn.textContent;
+        btn.textContent = '✅ 已复制';
+        setTimeout(() => { btn.classList.remove('copied'); btn.textContent = original; }, 2000);
+    } catch (err) {
+        alert('复制失败：' + err.message);
+    }
+}
+
+// 导出为 Excel（.xlsx）———— 采用 SheetJS 从 CDN 动态加载，支持真正的工作簿格式
+function exportExcel() {
+    const matrix = buildExportMatrix();
+    if (matrix.length <= 1) { alert('暂无数据可导出'); return; }
+    const btn = document.getElementById('btnExcel');
+    btn.textContent = '⏳ 准备中...';
+    loadSheetJS(() => {
+        try {
+            const ws = XLSX.utils.aoa_to_sheet(matrix);
+            // 列宽：姓名/用户名略宽，题目列适中
+            const widths = [4, 12, 16, 8, ...matrix[0].slice(4).map(() => ({ wch: 10 }))];
+            ws['!cols'] = widths;
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, '成绩表');
+            XLSX.writeFile(wb, '成绩表.xlsx');
+            btn.textContent = '📥 导出 Excel';
+        } catch (err) {
+            btn.textContent = '📥 导出 Excel';
+            alert('导出失败：' + err.message);
+        }
+    });
+}
+
+// 动态加载 SheetJS（仅首次导出时请求）
+let sheetJSPromise = null;
+function loadSheetJS(cb) {
+    if (window.XLSX) { cb(); return; }
+    if (!sheetJSPromise) {
+        sheetJSPromise = new Promise((resolve, reject) => {
+            const s = document.createElement('script');
+            s.src = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
+            s.onload = resolve;
+            s.onerror = reject;
+            document.head.appendChild(s);
+        });
+    }
+    sheetJSPromise.then(cb).catch(err => {
+        sheetJSPromise = null;
+        alert('无法加载 Excel 导出组件（需联网），可改用「复制表格」功能。\n' + err.message);
+    });
+}
+</script>
+</body>
+</html>
