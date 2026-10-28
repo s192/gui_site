@@ -1,430 +1,921 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>极域班级 CLS 姓名编辑器</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>极域班级机位编辑器</title>
 <style>
   :root{
-    --bg:#f5f6fa; --card:#ffffff; --line:#e3e6ef; --text:#2b2f38; --muted:#8a90a2;
-    --primary:#4361ee; --primary-d:#3249c2; --ok:#16a34a; --warn:#d97706; --danger:#e11d48;
-    --add:#e7f6ee; --del:#fdecef; --mod:#fff4d6;
-    --shadow:0 1px 3px rgba(20,30,60,.08), 0 8px 24px rgba(20,30,60,.06);
+    --bg:#f4f6fa; --card:#ffffff; --line:#e3e8ef; --line2:#eef1f6;
+    --text:#1e293b; --sub:#64748b; --muted:#94a3b8;
+    --pri:#2563eb; --pri-soft:#e8f0fe; --pri-dark:#1d4ed8;
+    --ok:#059669; --ok-soft:#e6f7f1;
+    --warn:#d97706; --warn-soft:#fef3c7;
+    --err:#dc2626; --err-soft:#fee2e2;
+    --cw:112px;
+    --shadow:0 1px 2px rgba(16,24,40,.05),0 4px 14px rgba(16,24,40,.06);
   }
-  *{box-sizing:border-box;}
-  body{margin:0;font-family:"Segoe UI","Microsoft YaHei",system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.5;}
-  header{padding:16px 24px;background:linear-gradient(135deg,#4361ee,#6d8bff);color:#fff;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
-  header h1{font-size:18px;margin:0;font-weight:600;}
-  header .sub{font-size:12px;opacity:.85;}
-  .toolbar{padding:12px 24px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;background:var(--card);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:10;}
-  .btn{border:none;border-radius:8px;padding:8px 14px;font-size:13px;cursor:pointer;font-weight:500;transition:.15s;background:#eef0f6;color:var(--text);}
-  .btn:hover{filter:brightness(.96);}
-  .btn.primary{background:var(--primary);color:#fff;}
-  .btn.primary:hover{background:var(--primary-d);}
-  .btn.ok{background:var(--ok);color:#fff;}
-  .btn.ghost{background:transparent;border:1px solid var(--line);}
-  .btn:disabled{opacity:.45;cursor:not-allowed;}
-  .stats{margin-left:auto;font-size:12px;color:var(--muted);display:flex;gap:14px;}
-  .stats b{color:var(--text);}
-  .layout{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);gap:16px;padding:16px 24px;align-items:start;}
-  @media(max-width:960px){.layout{grid-template-columns:1fr;}}
-  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);overflow:hidden;}
-  .card h2{font-size:14px;margin:0;padding:12px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;}
-  .card h2 .cnt{margin-left:auto;font-size:12px;color:var(--muted);font-weight:400;}
-  .empty-tip{margin:16px;padding:32px 24px;border:2px dashed var(--line);border-radius:10px;text-align:center;color:var(--muted);}
-  .paste-hint{font-size:12px;color:var(--primary);padding:8px 16px 0;}
-  textarea{width:calc(100% - 32px);min-height:160px;padding:12px;border:1px solid var(--line);border-radius:10px;font-family:"Consolas","Menlo",monospace;font-size:12px;resize:vertical;margin:0 16px 16px;}
-  .table-wrap{overflow:auto;max-height:62vh;}
-  table{width:100%;border-collapse:collapse;font-size:13px;}
-  th,td{padding:7px 10px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap;}
-  th{position:sticky;top:0;background:#fafbff;font-weight:600;color:var(--muted);z-index:2;user-select:none;}
-  th .arrow{font-size:10px;opacity:.5;}
-  th.sorted .arrow{opacity:1;color:var(--primary);}
-  td.idx{color:var(--muted);width:40px;text-align:center;}
-  td.name input{width:100%;min-width:120px;padding:5px 8px;border:1px solid var(--line);border-radius:6px;font-size:13px;font-family:inherit;}
-  td.name input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 2px rgba(67,97,238,.15);}
-  td.ip{font-family:monospace;}
-  td.mac{font-family:monospace;color:var(--muted);}
-  .diff-line{font-family:"Consolas","Menlo",monospace;font-size:12px;padding:1px 12px;white-space:pre-wrap;word-break:break-all;}
-  .diff-line.add{background:var(--add);color:#14532d;}
-  .diff-line.del{background:var(--del);color:#9f1239;}
-  .diff-line.ctx{color:var(--muted);}
-  .diff-empty{color:var(--muted);text-align:center;padding:40px 16px;}
-  .legend{display:flex;gap:14px;font-size:12px;color:var(--muted);padding:0 16px 8px;}
-  .legend span{display:flex;align-items:center;gap:5px;}
-  .dot{width:10px;height:10px;border-radius:2px;display:inline-block;}
-  .dot.add{background:var(--add);border:1px solid #86efac;}
-  .dot.del{background:var(--del);border:1px solid #fca5ab;}
-  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:#1f2330;color:#fff;padding:10px 18px;border-radius:9px;font-size:13px;opacity:0;pointer-events:none;transition:.25s;z-index:99;}
-  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
-  .name-cell{display:flex;align-items:center;gap:6px;}
-  .reset-btn{border:none;background:none;color:var(--muted);cursor:pointer;font-size:12px;padding:0 2px;visibility:hidden;}
-  tr:hover .reset-btn{visibility:visible;}
-  .badge-changed{background:var(--mod);}
-  tr.flash{animation:flashBg .9s ease;}
-  @keyframes flashBg{0%{background:#fff4d6;}100%{background:transparent;}}
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;background:var(--bg);color:var(--text);
+    font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei","Hiragino Sans GB",sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  button,input,select{font-family:inherit;font-size:13px;color:inherit}
+  button{cursor:pointer}
+
+  /* ---------- header ---------- */
+  header{
+    display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+    padding:12px 18px;background:var(--card);border-bottom:1px solid var(--line);
+    position:sticky;top:0;z-index:20;
+  }
+  .brand{display:flex;align-items:center;gap:10px;min-width:0}
+  .logo{
+    width:32px;height:32px;border-radius:9px;flex:none;
+    background:linear-gradient(135deg,#2563eb,#0ea5e9);color:#fff;
+    display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;
+  }
+  .brand h1{margin:0;font-size:16px;font-weight:650;letter-spacing:.2px}
+  .fileinfo{
+    font-size:12px;color:var(--sub);background:var(--line2);
+    padding:4px 10px;border-radius:20px;max-width:340px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  }
+  .spacer{flex:1}
+  .btn{
+    border:1px solid var(--line);background:var(--card);padding:7px 13px;border-radius:8px;
+    color:var(--text);transition:.15s;white-space:nowrap;
+  }
+  .btn:hover{border-color:#c7d2e0;background:#f8fafc}
+  .btn.primary{background:var(--pri);border-color:var(--pri);color:#fff}
+  .btn.primary:hover{background:var(--pri-dark)}
+  .btn.ghost{border-color:transparent;background:transparent;color:var(--sub)}
+  .btn.ghost:hover{background:var(--line2);color:var(--text)}
+  .btn.danger{color:var(--err);border-color:#f2c9c9}
+  .btn.danger:hover{background:var(--err-soft)}
+  .btn:disabled{opacity:.45;cursor:not-allowed}
+
+  /* ---------- layout ---------- */
+  main{display:grid;grid-template-columns:minmax(0,1fr) 336px;gap:16px;padding:16px;align-items:start}
+  @media (max-width:1080px){ main{grid-template-columns:minmax(0,1fr)} }
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow)}
+  .panel + .panel{margin-top:14px}
+  .panel-hd{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line2);flex-wrap:wrap}
+  .panel-hd h2{margin:0;font-size:14px;font-weight:650}
+  .panel-bd{padding:14px}
+
+  /* ---------- tabs ---------- */
+  .tabs{display:flex;gap:4px;background:var(--line2);padding:3px;border-radius:9px}
+  .tab{padding:6px 14px;border-radius:7px;border:0;background:transparent;color:var(--sub);font-weight:550}
+  .tab.on{background:var(--card);color:var(--pri);box-shadow:0 1px 3px rgba(16,24,40,.1)}
+
+  .toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 14px;border-bottom:1px solid var(--line2)}
+  .search{position:relative}
+  .search input{
+    border:1px solid var(--line);border-radius:8px;padding:6px 10px 6px 30px;width:210px;background:#fbfcfe;
+  }
+  .search input:focus{outline:none;border-color:var(--pri);background:#fff}
+  .search svg{position:absolute;left:9px;top:8px;color:var(--muted)}
+  .switch{display:flex;align-items:center;gap:6px;color:var(--sub);font-size:12.5px;user-select:none;cursor:pointer}
+  .switch input{accent-color:var(--pri)}
+  .zoom{display:flex;align-items:center;gap:7px;color:var(--sub);font-size:12.5px}
+  .zoom input{accent-color:var(--pri);width:96px}
+
+  /* ---------- seat map ---------- */
+  .seatwrap{padding:16px;overflow:auto;max-height:calc(100vh - 260px)}
+  .seatgrid{display:grid;gap:7px;min-width:min-content}
+  .rowlabel,.collabel{
+    color:var(--muted);font-size:11.5px;display:flex;align-items:center;justify-content:center;
+    font-variant-numeric:tabular-nums;
+  }
+  .rowlabel{justify-content:flex-end;padding-right:6px;white-space:nowrap}
+  .seat{
+    position:relative;border:1px solid var(--line);border-radius:9px;background:#fbfdff;
+    height:66px;padding:6px 8px;overflow:hidden;cursor:pointer;transition:.12s;
+    display:flex;flex-direction:column;justify-content:center;gap:2px;
+  }
+  .seat:hover{border-color:#bcd0ea;background:#f4f9ff;transform:translateY(-1px)}
+  .seat .no{
+    position:absolute;right:6px;top:4px;font-size:10px;color:var(--muted);font-variant-numeric:tabular-nums;
+  }
+  .seat .nm{font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:16px}
+  .seat .ip{font-size:11px;color:var(--sub);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .seat .mt{font-size:10.5px;color:var(--muted)}
+  .seat.sel{border-color:var(--pri);background:var(--pri-soft);box-shadow:0 0 0 3px rgba(37,99,235,.14)}
+  .seat.unnamed .nm{color:var(--warn)}
+  .seat.bad{border-color:#f0b4b4;background:#fff7f7}
+  .seat.dim{opacity:.28}
+  .seat.dragging{opacity:.4}
+  .seat.over{outline:2px dashed var(--pri);outline-offset:2px}
+  .empty{
+    border:1px dashed #d5dde8;border-radius:9px;height:66px;background:#fafbfd;
+    display:flex;align-items:center;justify-content:center;color:#c3cede;font-size:12px;
+  }
+  .empty.over{outline:2px dashed var(--pri);outline-offset:2px;background:var(--pri-soft)}
+  .empty:hover{border-color:var(--pri);color:var(--pri);cursor:pointer}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;padding:0 16px 14px;color:var(--sub);font-size:12px}
+  .legend i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+
+  /* ---------- table ---------- */
+  .tblwrap{max-height:calc(100vh - 250px);overflow:auto}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{border-bottom:1px solid var(--line2);padding:7px 10px;text-align:left;white-space:nowrap}
+  th{
+    position:sticky;top:0;background:#f8fafc;color:var(--sub);font-weight:600;font-size:12px;z-index:2;
+    border-bottom:1px solid var(--line);cursor:pointer;user-select:none;
+  }
+  th.act{cursor:default}
+  tbody tr:hover{background:#f8fbff}
+  tbody tr.sel{background:var(--pri-soft)}
+  tbody tr.bad td:first-child{box-shadow:inset 3px 0 0 var(--err)}
+  td input{
+    border:1px solid transparent;background:transparent;border-radius:6px;padding:3px 6px;width:100%;min-width:90px;
+  }
+  td input:hover{border-color:var(--line)}
+  td input:focus{outline:none;border-color:var(--pri);background:#fff}
+  td input.bad{background:var(--err-soft)}
+  .idx{color:var(--muted);font-variant-numeric:tabular-nums;width:34px}
+  .del{border:0;background:transparent;color:var(--muted);padding:2px 6px;border-radius:6px}
+  .del:hover{background:var(--err-soft);color:var(--err)}
+
+  /* ---------- aside ---------- */
+  .stats{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+  .stat{background:#f8fafc;border:1px solid var(--line2);border-radius:9px;padding:9px 11px}
+  .stat b{display:block;font-size:19px;font-weight:650;font-variant-numeric:tabular-nums;line-height:1.2}
+  .stat span{font-size:11.5px;color:var(--sub)}
+  .stat.e b{color:var(--err)} .stat.w b{color:var(--warn)} .stat.g b{color:var(--ok)}
+  .issues{max-height:210px;overflow:auto;margin:0;padding:0;list-style:none}
+  .issues li{
+    padding:8px 10px;border-radius:8px;background:#fff8f8;border:1px solid #f6dada;color:#9f1d1d;
+    font-size:12.5px;margin-bottom:7px;cursor:pointer;display:flex;gap:7px;align-items:flex-start;
+  }
+  .issues li:hover{background:#fff1f1}
+  .issues li.ok{background:var(--ok-soft);border-color:#c7ecdc;color:#046c51;cursor:default}
+  .issues li b{font-weight:650}
+
+  .field{margin-bottom:11px}
+  .field label{display:block;font-size:12px;color:var(--sub);margin-bottom:4px}
+  .field input{
+    width:100%;border:1px solid var(--line);border-radius:8px;padding:7px 10px;background:#fbfcfe;
+  }
+  .field input:focus{outline:none;border-color:var(--pri);background:#fff;box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+  .field input.bad{border-color:var(--err);background:#fff7f7}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .hint{font-size:11.5px;color:var(--muted);margin-top:-4px}
+  .empty-tip{color:var(--muted);font-size:13px;text-align:center;padding:26px 10px}
+
+  /* ---------- dropzone / start ---------- */
+  .start{padding:52px 20px;text-align:center}
+  .start .big{
+    width:100%;max-width:520px;margin:0 auto 14px;border:2px dashed #cbd5e1;border-radius:14px;
+    padding:34px 20px;background:#fafcff;transition:.15s;
+  }
+  .start .big.hot{border-color:var(--pri);background:var(--pri-soft)}
+  .start h2{margin:0 0 8px;font-size:17px}
+  .start p{margin:0 0 16px;color:var(--sub);font-size:13px}
+  .drop-mask{
+    position:fixed;inset:0;background:rgba(37,99,235,.09);backdrop-filter:blur(2px);
+    display:none;align-items:center;justify-content:center;z-index:99;
+    font-size:17px;color:var(--pri-dark);font-weight:650;
+  }
+  .drop-mask.on{display:flex}
+  .drop-mask div{
+    border:2px dashed var(--pri);border-radius:16px;background:#fff;padding:28px 40px;
+  }
+
+  details.help{margin:0 16px 16px;border:1px solid var(--line2);border-radius:10px;background:#fbfcfe}
+  details.help summary{padding:10px 14px;cursor:pointer;color:var(--sub);font-size:13px;font-weight:550}
+  details.help .hb{padding:0 16px 12px;color:var(--sub);font-size:12.5px;line-height:1.8}
+  details.help .hb b{color:var(--text)}
+  .toast{
+    position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);
+    background:#111827;color:#fff;padding:10px 18px;border-radius:10px;font-size:13px;
+    opacity:0;pointer-events:none;transition:.22s;z-index:200;box-shadow:0 8px 24px rgba(0,0,0,.2);
+  }
+  .toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+  .tag{font-size:11px;padding:2px 7px;border-radius:20px;background:var(--line2);color:var(--sub)}
+  .tag.w{background:var(--warn-soft);color:var(--warn)}
+  .tag.e{background:var(--err-soft);color:var(--err)}
 </style>
 </head>
 <body>
+
 <header>
-  <div>
-    <h1>📡 极域班级 CLS 姓名编辑器</h1>
-    <div class="sub">解析 / 重命名 / IP数值排序 / 还原原始顺序 / 差异对比 / 复制导出（.cls）</div>
+  <div class="brand">
+    <div class="logo">极</div>
+    <h1>极域班级机位编辑器</h1>
   </div>
+  <span class="fileinfo" id="fileInfo">未载入文件</span>
+  <div class="spacer"></div>
+  <button class="btn" id="btnOpen">📂 打开 .cls 文件</button>
+  <button class="btn" id="btnNew" title="不依赖原文件，从零建一份班级模型">＋ 新建空白班级</button>
+  <button class="btn" id="btnCsv" disabled>导出 CSV</button>
+  <button class="btn primary" id="btnSave" disabled>💾 导出 .cls</button>
+  <input type="file" id="fileInput" accept=".cls,.xml,.txt" hidden />
 </header>
 
-<div class="toolbar">
-  <button class="btn primary" id="btnLoadFile">📂 打开文件</button>
-  <button class="btn" id="btnSort" title="按 address 的 IP 属性做数值排序">🔢 按 IP 数值排序</button>
-  <button class="btn" id="btnRestore" title="还原为打开文件时的原始顺序（保留已改的姓名）">↺ 还原原始顺序</button>
-  <button class="btn" id="btnReset">↺ 重置全部</button>
-  <button class="btn ok" id="btnDownload">💾 导出 .cls</button>
-  <button class="btn" id="btnCopy">📋 复制文本</button>
-  <button class="btn ghost" id="btnToggleDiff">🔍 切换差异视图</button>
-  <input type="file" id="fileInput" accept=".cls,.xml,.txt,.classmodel" style="display:none">
-  <div class="stats">
-    <span>学生 <b id="statCount">0</b></span>
-    <span>已修改 <b id="statMod">0</b></span>
-    <span class="sort-state" id="statSort">未排序</span>
+<!-- 起始页 -->
+<div class="panel" id="startPage">
+  <div class="start">
+    <div class="big" id="dropZone">
+      <h2>把班级模型文件拖到这里</h2>
+      <p>支持极域电子教室导出的 <b>.cls</b> 班级模型（本质为 XML），也支持 .xml / .txt<br />全部处理都在本机浏览器完成，不联网、不上传</p>
+      <button class="btn primary" id="btnOpen2">选择文件</button>
+    </div>
+    <details class="help" style="max-width:520px;margin:0 auto;text-align:left">
+      <summary>这个文件里都有什么？</summary>
+      <div class="hb">
+        <b>posThumb x / y</b>：该学生机缩略图在教师端界面中的坐标，也就是机房里的<b>机位 / 座位</b>排布（x 越小越靠左，y 越小越靠前排）。本工具据此还原成座位图。<br />
+        <b>address</b>：网卡 MAC、学生机 IP、虚拟机 IP（VMTDIP）。<br />
+        <b>name</b>：学生姓名；未改名的机器通常显示成 IP、纯数字或 STU0xx。<br />
+        <b>signIn / platform / group</b>：签到状态、平台类型、分组信息，编辑后原样保留写回。
+      </div>
+    </details>
   </div>
 </div>
 
-<div class="layout">
-  <!-- 左：编辑/差异 -->
-  <div class="card">
-    <h2 id="leftTitle">📝 编辑 <span class="cnt" id="leftCnt"></span></h2>
-    <div id="emptyTip" class="empty-tip">👉 点击左上「📂 打开文件」选择 .cls 文件开始</div>
-    <div id="editArea" style="display:none">
-      <div class="paste-hint">💡 粘贴技巧：从 Excel 复制多行姓名后，点进任意一个「名称」格 Ctrl+V，第一行留在当前格，其余自动依次填入下方各行。</div>
-      <div class="legend">
-        <span><i class="dot add"></i>新增/改动行</span>
+<!-- 主界面 -->
+<main id="appPage" hidden>
+  <section>
+    <div class="panel">
+      <div class="panel-hd">
+        <div class="tabs">
+          <button class="tab on" data-view="seat">🗺️ 机位图</button>
+          <button class="tab" data-view="table">📋 名单表</button>
+        </div>
+        <div class="spacer"></div>
+        <span class="tag" id="clsName"></span>
       </div>
-      <div class="table-wrap">
-        <table id="tbl">
-          <thead>
-            <tr>
+
+      <div class="toolbar">
+        <div class="search">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+          <input id="q" placeholder="搜索姓名 / IP / MAC" />
+        </div>
+        <label class="switch"><input type="checkbox" id="showEmpty" checked /> 显示空机位</label>
+        <div class="zoom">卡片宽度 <input type="range" id="zoom" min="76" max="190" value="112" /></div>
+        <div class="spacer"></div>
+        <button class="btn ghost" id="btnCompact" title="按当前名单顺序，从左上角开始依次填满机位">⇱ 按名单顺序重排</button>
+        <button class="btn" id="btnAdd">＋ 新增学生</button>
+      </div>
+
+      <!-- 机位图 -->
+      <div id="seatView">
+        <div class="seatwrap"><div class="seatgrid" id="seatGrid"></div></div>
+        <div class="legend">
+          <span><i style="background:#e8f0fe;border:1px solid #2563eb"></i>当前选中</span>
+          <span><i style="background:#fef3c7;border:1px solid #d97706"></i>未改名（IP/数字/STU）</span>
+          <span><i style="background:#fee2e2;border:1px solid #dc2626"></i>IP / MAC / 机位冲突</span>
+          <span><i style="background:#fafbfd;border:1px dashed #d5dde8"></i>空机位</span>
+          <span style="color:var(--muted)">提示：拖动卡片可换座位，点空位可把选中学生移过去</span>
+        </div>
+      </div>
+
+      <!-- 名单表 -->
+      <div id="tableView" hidden>
+        <div class="tblwrap">
+          <table id="tbl">
+            <thead><tr>
               <th class="idx">#</th>
-              <th data-key="name">名称</th>
-              <th data-key="ip" class="sorted">IP <span class="arrow">▲</span></th>
-              <th data-key="mac">MAC</th>
-              <th data-key="x">pos x</th>
-              <th data-key="y">pos y</th>
-            </tr>
-          </thead>
-          <tbody id="tbody"></tbody>
-        </table>
+              <th data-sort="name">姓名</th>
+              <th data-sort="ip">IP</th>
+              <th data-sort="mac">MAC</th>
+              <th data-sort="seat">机位</th>
+              <th data-sort="sign">签到</th>
+              <th class="act">操作</th>
+            </tr></thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
       </div>
     </div>
-  </div>
+  </section>
 
-  <!-- 右：导出 + 差异 -->
-  <div style="display:flex;flex-direction:column;gap:16px;">
-    <div class="card">
-      <h2>📤 导出文本 <span class="cnt">修改后 XML</span></h2>
-      <div class="legend" style="padding-top:8px;">
-        <span><i class="dot add"></i>新增</span>
-        <span><i class="dot del"></i>删除</span>
-        <span>原始导出 → 当前导出（含名称与顺序变化）</span>
-      </div>
-      <div class="hint" style="font-size:12px;color:var(--muted);padding:0 16px 8px;">排序与名称编辑会实时反映在这里，可复制或下载。</div>
-      <textarea id="outText" readonly placeholder="导出结果将显示在此…"></textarea>
-      <div style="padding:0 16px 12px;display:flex;gap:8px;flex-wrap:wrap;">
-        <button class="btn ok" id="btnCopyOut">📋 复制导出文本</button>
-        <button class="btn primary" id="btnDownload2">💾 下载 .cls</button>
-        <button class="btn" id="btnPretty">切换缩进</button>
+  <aside>
+    <div class="panel">
+      <div class="panel-hd"><h2>概览</h2></div>
+      <div class="panel-bd">
+        <div class="stats" id="stats"></div>
       </div>
     </div>
 
-    <div class="card" id="diffCard">
-      <h2>🔍 文本差异 <span class="cnt">原始导出 → 当前导出</span></h2>
-      <div id="diffBox" class="diff-empty">尚未生成差异</div>
+    <div class="panel">
+      <div class="panel-hd"><h2>异常检查</h2><span class="tag" id="issueCount"></span></div>
+      <div class="panel-bd"><ul class="issues" id="issues"></ul></div>
     </div>
-  </div>
-</div>
 
+    <div class="panel">
+      <div class="panel-hd"><h2>编辑学生</h2><span class="tag" id="selTag">未选中</span></div>
+      <div class="panel-bd" id="detail"></div>
+    </div>
+  </aside>
+</main>
+
+<div class="drop-mask" id="dropMask"><div>松手即可载入 .cls 文件</div></div>
 <div class="toast" id="toast"></div>
 
 <script>
 (function(){
-  "use strict";
-  let ORIGINAL = "";        // 上传的原始文本
-  let students = [];        // [{name, ip, mac, x, y, origName}]
-  let origOrder = [];       // 原始文档顺序的 IP 序列（用于还原）
-  let sorted = false;
-  let pretty = true;
-  let showDiff = true;
-  const IPV4 = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/;
+"use strict";
 
-  // ---------- 工具 ----------
-  const $ = id => document.getElementById(id);
-  function toast(msg){const t=$("toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),1800);}
-  function ipToInt(ip){const m=String(ip).match(IPV4);if(!m)return null;return (((+m[1])<<24)|((+m[2])<<16)|((+m[3])<<8)|(+m[4]))>>>0;}
-  function escapeXml(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
-  function downloadFile(name,text){
-    const blob=new Blob([text],{type:"application/xml;charset=utf-8"});
-    const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;
-    document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(a.href);
-  }
-  // 根据原始文件名推导导出名（沿用原名 + .cls）
-  function deriveName(file){
-    const base=(file && file.name && file.name.replace(/\.[^/.]+$/,""))||"班级1";
-    return base+".cls";
-  }
+/* ============ 状态 ============ */
+var state = {
+  loaded:false, fileName:'', doc:null,
+  meta:{version:'2.0', name:'班级1'},
+  students:[],        // {name,mac,ip,vmtdip,x,y,groupId,leader,gx,gy,signState,signId,platformId}
+  groupsHTML:'', signHTML:'',
+  grid:{minX:10,maxX:10,stepX:96,minY:10,maxY:10,stepY:94,cols:1,rows:1},
+  view:'seat', sel:null, q:'', sortKey:'seat', sortAsc:true, showEmpty:true
+};
+var uid = 1;
+var $ = function(s){ return document.querySelector(s); };
+var esc = function(s){
+  return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+};
+var IP_RE = /^\d{1,3}(\.\d{1,3}){3}$/;
+var MAC_RE = /^([0-9A-Fa-f]{2}[:-]){5}[0-9A-Fa-f]{2}$|^[0-9A-Fa-f]{12}$/;
 
-  // ---------- 解析 ----------
-  function parse(xmlText){
-    const doc=new DOMParser().parseFromString(xmlText,"application/xml");
-    if(doc.querySelector("parsererror")){toast("❌ XML 解析失败，请检查格式");throw new Error("parsererror");}
-    const out=[];
-    doc.querySelectorAll("student").forEach((st)=>{
-      const name=(st.querySelector("name")?.textContent||"").trim();
-      const addr=st.querySelector("address");
-      const pos=st.querySelector("posThumb");
-      out.push({
-        name,name,origName:name,
-        ip:addr?.getAttribute("IP")||"",
-        mac:(addr?.getAttribute("mac")||"").toUpperCase(),
-        x:pos?.getAttribute("x")||"",
-        y:pos?.getAttribute("y")||"",
-      });
+function toast(msg){
+  var t = $('#toast'); t.textContent = msg; t.classList.add('on');
+  clearTimeout(toast._t); toast._t = setTimeout(function(){ t.classList.remove('on'); }, 2200);
+}
+
+/* ============ 解析 ============ */
+function parseCls(text, fileName){
+  var doc = new DOMParser().parseFromString(text, 'application/xml');
+  var perr = doc.getElementsByTagName('parsererror')[0];
+  if(perr) throw new Error('XML 解析失败：' + (perr.textContent||'').slice(0,120));
+  var root = doc.documentElement;
+  if(!root || root.nodeName.toLowerCase() !== 'classmodel')
+    throw new Error('这不是极域班级模型文件（根节点应为 classmodel）');
+
+  state.doc = doc;
+  state.fileName = fileName || '';
+  state.meta.version = root.getAttribute('version') || '2.0';
+  state.meta.name = root.getAttribute('name') || '班级1';
+
+  var list = [];
+  var nodes = root.getElementsByTagName('student');
+  for(var i=0;i<nodes.length;i++){
+    var el = nodes[i];
+    var nm = el.getElementsByTagName('name')[0];
+    var ad = el.getElementsByTagName('address')[0] || null;
+    var ps = el.getElementsByTagName('posThumb')[0] || null;
+    var gp = el.getElementsByTagName('group')[0] || null;
+    var sg = el.getElementsByTagName('signIn')[0] || null;
+    var pf = el.getElementsByTagName('platform')[0] || null;
+    list.push({
+      id: uid++,
+      name: nm ? (nm.textContent||'') : '',
+      mac: ad ? (ad.getAttribute('mac')||'') : '',
+      ip: ad ? (ad.getAttribute('IP')||'') : '',
+      vmtdip: ad ? (ad.getAttribute('VMTDIP')||'0.0.0.0') : '0.0.0.0',
+      x: ps ? parseInt(ps.getAttribute('x'),10) || 0 : 0,
+      y: ps ? parseInt(ps.getAttribute('y'),10) || 0 : 0,
+      groupId: gp ? (gp.getAttribute('id')||'0') : '0',
+      leader: gp ? (gp.getAttribute('leader')||'0') : '0',
+      gx: gp ? (gp.getAttribute('x')||'0') : '0',
+      gy: gp ? (gp.getAttribute('y')||'0') : '0',
+      signState: sg ? (sg.getAttribute('state')||'0') : '0',
+      signId: sg ? (sg.getAttribute('id')||'0') : '0',
+      platformId: pf ? (pf.getAttribute('id')||'1') : '1'
     });
-    return out;
   }
+  if(!list.length) throw new Error('文件里没有找到任何 student 节点');
+  state.students = list;
 
-  let currentFile = null;
-  function loadFromString(text, file){
-    ORIGINAL=text;
-    currentFile = file || null;
-    students=parse(text);
-    origOrder = students.map(s=>s.ip); // 记录原始文档顺序
-    sorted=false;
-    render();
-    buildExport();
-    baseExport = $("outText").value;   // 锚定「原始顺序 + 原始姓名」的导出文本，作为差异基准
-    toast("✅ 已解析 "+students.length+" 个学生");
-  }
+  // 保留 groups / signInInfos 原样
+  var gs = doc.getElementsByTagName('group');
+  var arr = [];
+  for(var j=0;j<gs.length;j++){ if(gs[j].parentNode && gs[j].parentNode.nodeName.toLowerCase()==='groups') arr.push(serializeEl(gs[j])); }
+  state.groupsHTML = arr.length ? arr.join('\n') : '<group id="255" function_mask="-1" arrange="0" name="所有成员" cx="80" cy="60" />';
+  var si = doc.getElementsByTagName('signInInfos')[0];
+  state.signHTML = si ? serializeEl(si) : '<signInInfos signInStrategy="0" signInSeqId="0" />';
 
-  // ---------- 排序（IP 数值排序，非字符串） ----------
-  function sortByIp(){
-    students=[...students].sort((a,b)=>{
-      const ai=ipToInt(a.ip), bi=ipToInt(b.ip);
-      if(ai==null && bi==null)return (a.ip+"").localeCompare(b.ip+"");
-      if(ai==null)return 1;if(bi==null)return -1;
-      return ai-bi;
-    });
-    sorted=true;
-    render();buildExport();
-    toast("🔢 已按 IP 数值排序");
-  }
+  state.loaded = true;
+  computeGrid();
+  state.sel = null;
+  sortBySeat();
+}
 
-  // 还原为打开文件时的原始顺序（保留已修改的姓名）
-  function restoreOriginalOrder(){
-    if(!origOrder.length){toast("暂无原始顺序记录");return;}
-    const map=new Map(students.map(s=>[s.ip,s]));
-    students=origOrder.map(ip=>map.get(ip)).filter(Boolean);
-    sorted=false;
-    render();buildExport();
-    toast("↺ 已还原为原始顺序");
-  }
+function serializeEl(el){ return new XMLSerializer().serializeToString(el); }
 
-  // ---------- 渲染表格 ----------
-  function render(){
-    const tb=$("tbody");tb.innerHTML="";
-    students.forEach((s,i)=>{
-      const changed=s.name!==s.origName;
-      const tr=document.createElement("tr");
-      tr.innerHTML=`
-        <td class="idx">${i+1}</td>
-        <td class="name">
-          <div class="name-cell">
-            <input type="text" value="${escapeXml(s.name)}" data-i="${i}" class="name-input ${changed?"badge-changed":""}">
-            <button class="reset-btn" title="恢复原名">↺</button>
-          </div>
-        </td>
-        <td class="ip">${escapeXml(s.ip)}</td>
-        <td class="mac">${escapeXml(s.mac)}</td>
-        <td>${escapeXml(s.x)}</td>
-        <td>${escapeXml(s.y)}</td>`;
-      tb.appendChild(tr);
-      const inp=tr.querySelector(".name-input");
-      inp.addEventListener("input",e=>{s.name=e.target.value;e.target.classList.toggle("badge-changed",s.name!==s.origName);updateStats();buildExport();});
-      // ---- 多行粘贴：换行溢出自动排到后面的格子 ----
-      inp.addEventListener("paste",e=>{
-        const text=e.clipboardData.getData("text");
-        if(!text || !text.includes("\n") && !text.includes("\r")) return; // 单行走默认
-        e.preventDefault();
-        const names=text.split(/\r?\n/).map(l=>l.replace(/\t.*$/,"").trim()).filter(Boolean);
-        if(!names.length) return;
-        // 从当前输入框所在行开始，依次填充后续行
-        const startIdx=students.indexOf(s);
-        const applied=Math.min(names.length, students.length-startIdx);
-        for(let k=0;k<applied;k++){
-          students[startIdx+k].name=names[k];
-        }
-        render();buildExport();
-        // 高亮被填充的行
-        [...tb.children].slice(startIdx,startIdx+applied).forEach(tr=>tr.classList.add("flash"));
-        toast(`📋 已将 ${applied} 个姓名从第 ${startIdx+1} 行开始填入`);
-      });
-      tr.querySelector(".reset-btn").addEventListener("click",()=>{s.name=s.origName;inp.value=s.origName;inp.classList.remove("badge-changed");updateStats();render();buildExport();});
-    });
-    updateStats();
-    $("editArea").style.display=students.length?"block":"none";
-    $("emptyTip").style.display=students.length?"none":"block";
-    $("leftCnt").textContent=students.length?`共 ${students.length} 条`:"";
-  }
+/* 推断网格步长（众数法），还原真实机位阵列 */
+function computeGrid(){
+  var xs = state.students.map(function(s){return s.x;});
+  var ys = state.students.map(function(s){return s.y;});
+  var stepX = guessStep(xs) || 96, stepY = guessStep(ys) || 94;
+  var minX = Math.min.apply(null,xs), maxX = Math.max.apply(null,xs);
+  var minY = Math.min.apply(null,ys), maxY = Math.max.apply(null,ys);
+  state.grid = {
+    minX:minX, maxX:maxX, stepX:stepX,
+    minY:minY, maxY:maxY, stepY:stepY,
+    cols: Math.round((maxX-minX)/stepX)+1,
+    rows: Math.round((maxY-minY)/stepY)+1
+  };
+}
+function guessStep(arr){
+  var u = arr.filter(function(v,i){ return arr.indexOf(v)===i; }).sort(function(a,b){return a-b;});
+  if(u.length<2) return 0;
+  var gap = {}, i, d;
+  for(i=1;i<u.length;i++){ d = u[i]-u[i-1]; if(d>0) gap[d]=(gap[d]||0)+1; }
+  var best=0, bn=0;
+  for(var k in gap){ if(gap[k]>bn || (gap[k]===bn && (+k)<best)){ bn=gap[k]; best=+k; } }
+  return best;
+}
 
-  function updateStats(){
-    $("statCount").textContent=students.length;
-    $("statMod").textContent=students.filter(s=>s.name!==s.origName).length;
-    $("statSort").textContent=sorted?"已按IP排序 ▲":"原始顺序";
-  }
+function isUnnamed(n){
+  n = (n||'').trim();
+  if(!n) return true;
+  if(IP_RE.test(n)) return true;
+  if(/^\d{1,4}$/.test(n)) return true;
+  if(/^STU\d*$/i.test(n)) return true;
+  return false;
+}
 
-  // 缓存「原始顺序 + 原始姓名」下的导出文本（用于差异对比基准，避免与当前混用）
-  let baseExport = "";
+/* ============ 校验 ============ */
+function analyze(){
+  var ipMap={}, macMap={}, posMap={};
+  var dupIp=[], dupMac=[], dupPos=[], badIp=[], badMac=[], unnamed=[];
+  state.students.forEach(function(s){
+    var key;
+    if(s.ip){ key=s.ip; (ipMap[key]=ipMap[key]||[]).push(s); }
+    if(s.mac){ key=s.mac.toUpperCase(); (macMap[key]=macMap[key]||[]).push(s); }
+    key = s.x+','+s.y; (posMap[key]=posMap[key]||[]).push(s);
+    if(s.ip && !IP_RE.test(s.ip)) badIp.push(s);
+    if(s.mac && !MAC_RE.test(s.mac)) badMac.push(s);
+    if(isUnnamed(s.name)) unnamed.push(s);
+  });
+  Object.keys(ipMap).forEach(function(k){ if(ipMap[k].length>1) dupIp.push(ipMap[k]); });
+  Object.keys(macMap).forEach(function(k){ if(macMap[k].length>1) dupMac.push(macMap[k]); });
+  Object.keys(posMap).forEach(function(k){ if(posMap[k].length>1) dupPos.push(posMap[k]); });
+  var badSet = {};
+  dupIp.forEach(function(g){ g.forEach(function(s){ badSet[s.id]=1; }); });
+  dupMac.forEach(function(g){ g.forEach(function(s){ badSet[s.id]=1; }); });
+  dupPos.forEach(function(g){ g.forEach(function(s){ badSet[s.id]=1; }); });
+  return {ipMap:ipMap, macMap:macMap, dupIp:dupIp, dupMac:dupMac, dupPos:dupPos, badIp:badIp, badMac:badMac, unnamed:unnamed, badSet:badSet,
+          empties: state.grid.cols*state.grid.rows - state.students.length};
+}
 
-  // ---------- 构建导出 XML（保留原文档结构，仅替换 name + 按当前顺序重排 student） ----------
-  function buildExport(){
-    if(!ORIGINAL){$("outText").value="";return;}
-    const declMatch=ORIGINAL.match(/^\s*(<\?xml[^?]*\?>)/i);
-    const decl=declMatch?declMatch[1].trim():'<?xml version="1.0" encoding="utf-8" standalone="yes" ?>';
+/* ============ 渲染：机位图 ============ */
+function renderSeat(){
+  var a = analyze(), g = state.grid;
+  var wrap = $('#seatGrid');
+  wrap.style.gridTemplateColumns = '46px repeat(' + g.cols + ', var(--cw))';
+  var q = state.q.trim().toLowerCase();
+  var html = '';
 
-    // 1) 从原始文本中提取：头部（<students> 之前）、每个 <student> 原始块、尾部（</students> 之后）
-    //    用正则按块切分，天然规避空白文本节点干扰，且保留原始缩进格式
-    const head=ORIGINAL.replace(/<\/students>[\s\S]*$/i,"")+"";  // 含 <students> 开头
-    const studentBlocks=[...ORIGINAL.matchAll(/<student\b[\s\S]*?<\/student>/gi)].map(m=>m[0]);
-    const tailMatch=ORIGINAL.match(/<\/students>[\s\S]*$/i);
-    const tail=tailMatch?tailMatch[0]:"";
+  // 列号
+  html += '<div class="rowlabel"></div>';
+  for(var c=0;c<g.cols;c++) html += '<div class="collabel">'+(c+1)+'</div>';
 
-    // 建立 IP -> 原始块（按块出现顺序，首个为准；同名IP取先出现的）
-    const blockByIp=new Map();
-    studentBlocks.forEach(b=>{
-      const ipMatch=b.match(/\bIP="([^"]*)"/);
-      if(ipMatch && ipMatch[1] && !blockByIp.has(ipMatch[1])) blockByIp.set(ipMatch[1], b);
-    });
+  var map = {};
+  state.students.forEach(function(s){ map[s.x+','+s.y] = s; });
 
-    // 2) 按当前 students 顺序，重组块（顺序严格等于 students），并替换其中的 <name>
-    const indentMatch=studentBlocks[0]?studentBlocks[0].match(/^\s*/):[""];
-    const indent=indentMatch?indentMatch[0].replace(/\n/g,""):"        ";  // 原始块前导空白
-    const reordered=students.map(s=>{
-      const b=blockByIp.get(s.ip);
-      if(!b) return "";
-      // 替换 name：优先精确替换第一个 <name>，保持块内其它结构不变
-      return b.replace(/<name>([\s\S]*?)<\/name>/, "<name>"+escapeXml(s.name)+"</name>");
-    }).filter(Boolean).join("\n");
-
-    let xml=decl+"\n"+head.replace(/\s*$/,"")+"\n"+reordered+"\n"+tail.replace(/^\s*/,"");
-    if(!pretty){
-      xml=xml.replace(/\n+/g,"").replace(/>\s+</g,"><").trim();
-    }
-    $("outText").value=xml;
-    if(showDiff) renderDiff();
-  }
-
-  // ---------- 差异对比 ----------
-  // 采用「规范化文本」比较（压缩空白后再对比），彻底消除缩进/换行差异；
-  // 即使切换「格式化 / 压缩」模式，也不会产生虚假的 ±全量 差异。
-  function normalizeForDiff(text){
-    return String(text).replace(/\s+/g," ").replace(/>\s+</g,"><").trim();
-  }
-
-  function renderDiff(){
-    const box=$("diffBox");
-    const cur=$("outText").value;
-    if(!baseExport && !cur){box.className="diff-empty";box.textContent="尚未生成差异";return;}
-
-    // 规范化后再比对，聚焦「内容 / 顺序」变化，忽略格式差异
-    const a=normalizeForDiff(baseExport);
-    const b=normalizeForDiff(cur);
-    box.className="";box.innerHTML="";
-
-    if(a===b){
-      box.innerHTML=`<div class="diff-line ctx">（无差异）</div>`;
-      return;
-    }
-
-    // 基于「每行一个 <student>」做语义级增删对比，结果更直观
-    const splitRe=/<student\b[\s\S]*?<\/student>/g;
-    const aStus=[...a.matchAll(splitRe)].map(m=>m[0]);
-    const bStus=[...b.matchAll(splitRe)].map(m=>m[0]);
-    const getIp=x=>{const m=x.match(/\bIP="([^"]*)"/);return m?m[1]:"";};
-    const getName=x=>{const m=x.match(/<name>([\s\S]*?)<\/name>/);return m?m[1]:"(空)";};
-
-    let html=`<div class="diff-line ctx">对比：打开时原始导出 → 当前导出（含名称与顺序变化）</div>`;
-    let add=0,del=0,mod=0;
-    const max=Math.max(aStus.length,bStus.length);
-    for(let i=0;i<max;i++){
-      const A=aStus[i], B=bStus[i];
-      if(A===B){ continue; }
-      if(!A){ html+=`<div class="diff-line add">+ [${getIp(B)}] ${escapeXml(getName(B))}</div>`; add++; }
-      else if(!B){ html+=`<div class="diff-line del">- [${getIp(A)}] ${escapeXml(getName(A))}</div>`; del++; }
-      else{
-        const ipA=getIp(A), ipB=getIp(B);
-        if(ipA===ipB && getName(A)!==getName(B)){
-          html+=`<div class="diff-line add">~ [${ipA}] ${escapeXml(getName(A))} → ${escapeXml(getName(B))}</div>`; mod++;
-        } else{
-          html+=`<div class="diff-line del">- [${ipA}] ${escapeXml(getName(A))}</div>`; del++;
-          html+=`<div class="diff-line add">+ [${ipB}] ${escapeXml(getName(B))}</div>`; add++;
-        }
+  for(var r=0;r<g.rows;r++){
+    html += '<div class="rowlabel">第'+(r+1)+'排</div>';
+    for(var c2=0;c2<g.cols;c2++){
+      var x = g.minX + c2*g.stepX, y = g.minY + r*g.stepY;
+      var s = map[x+','+y];
+      if(s){
+        var cls = 'seat';
+        if(state.sel===s.id) cls += ' sel';
+        if(a.badSet[s.id]) cls += ' bad';
+        else if(isUnnamed(s.name)) cls += ' unnamed';
+        if(q && !match(s,q)) cls += ' dim';
+        html += '<div class="'+cls+'" draggable="true" data-id="'+s.id+'" data-x="'+x+'" data-y="'+y+'" title="'+esc(s.name||'(无名)')+'&#10;IP '+esc(s.ip)+'&#10;MAC '+esc(s.mac)+'">'
+             +  '<span class="no">'+(r+1)+'-'+(c2+1)+'</span>'
+             +  '<div class="nm">'+esc(s.name||'(无名)')+'</div>'
+             +  '<div class="ip">'+esc(s.ip||'—')+'</div>'
+             +  '</div>';
+      }else{
+        if(!state.showEmpty) { html += '<div></div>'; continue; }
+        html += '<div class="empty" data-x="'+x+'" data-y="'+y+'" title="空机位（第'+(r+1)+'排第'+(c2+1)+'列）">空</div>';
       }
     }
-    if(add===0 && del===0 && mod===0) html+=`<div class="diff-line ctx">（无差异）</div>`;
-    else html+=`<div class="diff-line ctx">共计 +${add} / -${del}`+(mod?` / ~${mod}`:"")+` 变化</div>`;
-    box.innerHTML=html;
   }
+  wrap.innerHTML = html;
+  bindSeat();
+}
+function match(s,q){
+  return (s.name||'').toLowerCase().indexOf(q)>=0 || (s.ip||'').toLowerCase().indexOf(q)>=0 || (s.mac||'').toLowerCase().indexOf(q)>=0;
+}
 
-  // ---------- 事件 ----------
-  $("btnSort").addEventListener("click",sortByIp);
-  $("btnRestore").addEventListener("click",restoreOriginalOrder);
-  $("btnReset").addEventListener("click",()=>{if(ORIGINAL){loadFromString(ORIGINAL,currentFile);toast("↺ 已重置全部（含姓名）");}});
-  $("btnPretty").addEventListener("click",()=>{pretty=!pretty;buildExport();toast(pretty?"已切换为格式化":"已切换为压缩");});
-
-  $("btnCopy").addEventListener("click",async()=>{
-    const t=$("outText").value;if(!t){toast("暂无内容");return;}
-    try{await navigator.clipboard.writeText(t);toast("📋 已复制导出文本");}
-    catch{copyFallback(t);toast("📋 已复制（兼容模式）");}
+function bindSeat(){
+  var grid = $('#seatGrid'), dragId = null;
+  grid.querySelectorAll('.seat').forEach(function(el){
+    el.addEventListener('click', function(){ select(+el.dataset.id); });
+    el.addEventListener('dragstart', function(e){
+      dragId = +el.dataset.id; el.classList.add('dragging');
+      try{ e.dataTransfer.setData('text/plain', String(dragId)); e.dataTransfer.effectAllowed='move'; }catch(err){}
+    });
+    el.addEventListener('dragend', function(){ el.classList.remove('dragging'); dragId=null; clearOver(); });
   });
-  $("btnCopyOut").addEventListener("click",()=>$("btnCopy").click());
-  function copyFallback(t){const ta=document.createElement("textarea");ta.value=t;ta.style.position="fixed";ta.style.opacity="0";document.body.appendChild(ta);ta.select();document.execCommand("copy");ta.remove();}
-
-  function doExport(){
-    buildExport();
-    const name=deriveName(currentFile);
-    downloadFile(name,$("outText").value);
-    toast("💾 已导出 "+name);
-  }
-  $("btnDownload").addEventListener("click",()=>{if(!students.length){toast("请先打开文件");return;}doExport();});
-  $("btnDownload2").addEventListener("click",()=>{if(!students.length){toast("请先打开文件");return;}doExport();});
-
-  $("btnToggleDiff").addEventListener("click",()=>{
-    showDiff=!showDiff;
-    $("diffCard").style.display=showDiff?"block":"none";
-    if(showDiff) renderDiff();
-  });
-
-  // 文件选择（仅按钮，无拖拽）
-  $("btnLoadFile").addEventListener("click",()=>$("fileInput").click());
-  $("fileInput").addEventListener("change",e=>{const f=e.target.files[0];if(f)readFile(f);});
-
-  function readFile(file){
-    const r=new FileReader();
-    r.onload=()=>loadFromString(r.result,file);
-    r.readAsText(file,"utf-8");
-  }
-
-  // 表头点击排序
-  $("tbl").querySelectorAll("th[data-key]").forEach(th=>{
-    th.addEventListener("click",()=>{
-      const key=th.dataset.key;
-      if(key==="ip"){sortByIp();return;}
-      if(key==="name"){students=[...students].sort((a,b)=>a.name.localeCompare(b.name));sorted=true;}
-      if(key==="mac"){students=[...students].sort((a,b)=>a.mac.localeCompare(b.mac));sorted=true;}
-      render();buildExport();
+  grid.querySelectorAll('.seat,.empty').forEach(function(el){
+    el.addEventListener('dragover', function(e){ e.preventDefault(); clearOver(); el.classList.add('over'); });
+    el.addEventListener('dragleave', function(){ el.classList.remove('over'); });
+    el.addEventListener('drop', function(e){
+      e.preventDefault(); el.classList.remove('over');
+      if(dragId==null) return;
+      var tx = +el.dataset.x, ty = +el.dataset.y;
+      moveTo(dragId, tx, ty, true);
+      dragId = null;
     });
   });
+  grid.querySelectorAll('.empty').forEach(function(el){
+    el.addEventListener('click', function(){
+      if(state.sel==null){ toast('先选中一个学生，再点空位即可移动'); return; }
+      moveTo(state.sel, +el.dataset.x, +el.dataset.y, false);
+    });
+  });
+  function clearOver(){ grid.querySelectorAll('.over').forEach(function(n){ n.classList.remove('over'); }); }
+}
 
-  // 初始化：无内嵌数据，等待用户打开文件
-  updateStats();
+function moveTo(id, x, y, swap){
+  var me = byId(id); if(!me) return;
+  var other = state.students.filter(function(s){ return s.id!==id && s.x===x && s.y===y; })[0];
+  if(other && swap){ other.x = me.x; other.y = me.y; }
+  else if(other && !swap){ toast('该机位已被「'+(other.name||'无名')+'」占用'); return; }
+  me.x = x; me.y = y;
+  select(id); renderAll();
+  toast(swap && other ? '已与「'+(other.name||'无名')+'」互换机位' : '已移动到第'+rowOf(y)+'排第'+colOf(x)+'列');
+}
+function rowOf(y){ return Math.round((y-state.grid.minY)/state.grid.stepY)+1; }
+function colOf(x){ return Math.round((x-state.grid.minX)/state.grid.stepX)+1; }
+function byId(id){ return state.students.filter(function(s){return s.id===id;})[0]; }
+
+/* ============ 渲染：表格 ============ */
+function renderTable(){
+  var a = analyze(), q = state.q.trim().toLowerCase();
+  var rows = state.students.filter(function(s){ return !q || match(s,q); });
+  var tb = $('#tbody');
+  if(!rows.length){ tb.innerHTML = '<tr><td colspan="7" class="empty-tip">没有匹配的学生</td></tr>'; return; }
+  var html = '';
+  rows.forEach(function(s,i){
+    var cls = (state.sel===s.id?'sel':'') + (a.badSet[s.id]?' bad':'');
+    html += '<tr class="'+cls+'" data-id="'+s.id+'">'
+      + '<td class="idx">'+(i+1)+'</td>'
+      + '<td><input data-f="name" value="'+esc(s.name)+'" class="'+(isUnnamed(s.name)?'bad':'')+'" /></td>'
+      + '<td><input data-f="ip" value="'+esc(s.ip)+'" class="'+(a.ipMap[s.ip]&&a.ipMap[s.ip].length>1?'bad':'')+'" /></td>'
+      + '<td><input data-f="mac" value="'+esc(s.mac)+'" class="'+(a.macMap[(s.mac||'').toUpperCase()]&&a.macMap[(s.mac||'').toUpperCase()].length>1?'bad':'')+'" /></td>'
+      + '<td>'+rowOf(s.y)+'排'+colOf(s.x)+'列</td>'
+      + '<td>'+(s.signState==='1'?'<span class="tag">已签到</span>':'<span class="tag w">未签到</span>')+'</td>'
+      + '<td><button class="del" data-del="1" title="删除该学生">✕</button></td>'
+      + '</tr>';
+  });
+  tb.innerHTML = html;
+  tb.querySelectorAll('input').forEach(function(inp){
+    inp.addEventListener('input', function(){
+      var tr = inp.closest('tr'), s = byId(+tr.dataset.id);
+      if(!s) return;
+      s[inp.dataset.f] = inp.value;
+      if(inp.dataset.f==='name') inp.className = isUnnamed(s.name)?'bad':'';
+      renderSeat(); renderStats(); renderIssues(); if(state.sel===s.id) renderDetail();
+    });
+    inp.addEventListener('focus', function(){ select(+inp.closest('tr').dataset.id, true); });
+  });
+  tb.querySelectorAll('[data-del]').forEach(function(b){
+    b.addEventListener('click', function(){
+      var tr = b.closest('tr'), s = byId(+tr.dataset.id);
+      if(!s) return;
+      if(!confirm('确定删除「'+(s.name||'无名')+'」？')) return;
+      state.students = state.students.filter(function(x){ return x.id!==s.id; });
+      if(state.sel===s.id) state.sel = null;
+      renderAll();
+    });
+  });
+  tb.querySelectorAll('tr[data-id]').forEach(function(tr){
+    tr.addEventListener('click', function(e){ if(e.target.tagName!=='INPUT' && e.target.tagName!=='BUTTON') select(+tr.dataset.id); });
+  });
+}
+
+/* ============ 渲染：统计 / 异常 / 详情 ============ */
+function renderStats(){
+  var a = analyze();
+  var named = state.students.length - a.unnamed.length;
+  $('#stats').innerHTML =
+     stat(state.students.length,'学生总数','') +
+     stat(named,'已实名','g') +
+     stat(a.unnamed.length,'待改名','w') +
+     stat(Math.max(0,a.empties),'空机位','') +
+     stat(a.dupIp.length+a.dupMac.length+a.dupPos.length,'冲突项','e') +
+     stat(state.grid.rows+'×'+state.grid.cols,'机位阵列','');
+  function stat(n,label,c){ return '<div class="stat '+c+'"><b>'+n+'</b><span>'+label+'</span></div>'; }
+}
+
+function renderIssues(){
+  var a = analyze(), ul = $('#issues'), items = [];
+  a.dupIp.forEach(function(g){ items.push('<li data-id="'+g[0].id+'"><b>IP 重复</b>：'+esc(g[0].ip)+'（'+g.map(function(s){return esc(s.name||'无名');}).join('、')+'）</li>'); });
+  a.dupMac.forEach(function(g){ items.push('<li data-id="'+g[0].id+'"><b>MAC 重复</b>：'+esc(g[0].mac)+'（'+g.map(function(s){return esc(s.name||'无名');}).join('、')+'）</li>'); });
+  a.dupPos.forEach(function(g){ items.push('<li data-id="'+g[0].id+'"><b>机位重叠</b>：第'+rowOf(g[0].y)+'排第'+colOf(g[0].x)+'列（'+g.map(function(s){return esc(s.name||'无名');}).join('、')+'）</li>'); });
+  a.badIp.forEach(function(s){ items.push('<li data-id="'+s.id+'"><b>IP 格式异常</b>：'+esc(s.name||'无名')+' → '+esc(s.ip)+'</li>'); });
+  a.badMac.forEach(function(s){ items.push('<li data-id="'+s.id+'"><b>MAC 格式异常</b>：'+esc(s.name||'无名')+' → '+esc(s.mac)+'</li>'); });
+  $('#issueCount').textContent = items.length ? items.length+' 项' : '无异常';
+  $('#issueCount').className = 'tag' + (items.length?' e':'');
+  if(!items.length) items.push('<li class="ok">✓ 未发现 IP / MAC / 机位冲突</li>');
+  if(a.unnamed.length) items.push('<li class="ok" style="background:#fffbeb;border-color:#fde68a;color:#92400e">⚠ '+a.unnamed.length+' 台机器仍使用默认名（IP / 数字 / STU），建议改成真实姓名</li>');
+  ul.innerHTML = items.join('');
+  ul.querySelectorAll('li[data-id]').forEach(function(li){
+    li.addEventListener('click', function(){ select(+li.dataset.id); if(state.view!=='seat'){ switchView('seat'); } });
+  });
+}
+
+function renderDetail(){
+  var box = $('#detail'), s = byId(state.sel);
+  if(!s){
+    $('#selTag').textContent = '未选中';
+    box.innerHTML = '<div class="empty-tip">在机位图或名单中点一个学生开始编辑<br />（拖动卡片可直接换座位）</div>';
+    return;
+  }
+  var a = analyze();
+  $('#selTag').textContent = '第'+rowOf(s.y)+'排第'+colOf(s.x)+'列';
+  box.innerHTML =
+    '<div class="field"><label>姓名</label><input data-f="name" value="'+esc(s.name)+'" class="'+(isUnnamed(s.name)?'bad':'')+'" />'
+      + (isUnnamed(s.name)?'<div class="hint">看起来还是机器默认名，建议改成学生姓名</div>':'') + '</div>'
+    + '<div class="row2">'
+      + '<div class="field"><label>机位 IP</label><input data-f="ip" value="'+esc(s.ip)+'" class="'+(a.dupIp.some(function(g){return g.indexOf(s)>=0;})?'bad':'')+'" /></div>'
+      + '<div class="field"><label>虚拟机 IP</label><input data-f="vmtdip" value="'+esc(s.vmtdip)+'" /></div>'
+    + '</div>'
+    + '<div class="field"><label>网卡 MAC</label><input data-f="mac" value="'+esc(s.mac)+'" class="'+(a.dupMac.some(function(g){return g.indexOf(s)>=0;})?'bad':'')+'" placeholder="如 309C23C93535" /></div>'
+    + '<div class="row2">'
+      + '<div class="field"><label>第几排</label><input type="number" data-rc="row" value="'+rowOf(s.y)+'" min="1" /></div>'
+      + '<div class="field"><label>第几列</label><input type="number" data-rc="col" value="'+colOf(s.x)+'" min="1" /></div>'
+    + '</div>'
+    + '<div class="row2">'
+      + '<div class="field"><label>签到状态</label><input data-f="signState" value="'+esc(s.signState)+'" title="0=未签到 1=已签到" /></div>'
+      + '<div class="field"><label>平台类型</label><input data-f="platformId" value="'+esc(s.platformId)+'" /></div>'
+    + '</div>'
+    + '<details class="help" style="margin:0 0 12px"><summary>更多字段（分组 / 原始坐标）</summary><div class="hb">'
+      + '<div class="row2" style="margin-top:8px">'
+        + '<div class="field"><label>分组 ID</label><input data-f="groupId" value="'+esc(s.groupId)+'" /></div>'
+        + '<div class="field"><label>组长标记</label><input data-f="leader" value="'+esc(s.leader)+'" /></div>'
+      + '</div>'
+      + '<div class="row2">'
+        + '<div class="field"><label>原始坐标 X</label><input data-f="x" value="'+s.x+'" /></div>'
+        + '<div class="field"><label>原始坐标 Y</label><input data-f="y" value="'+s.y+'" /></div>'
+      + '</div></div></details>'
+    + '<div style="display:flex;gap:8px">'
+      + '<button class="btn primary" style="flex:1" data-act="sign">标记已签到</button>'
+      + '<button class="btn danger" data-act="del">删除</button>'
+    + '</div>';
+
+  box.querySelectorAll('input').forEach(function(inp){
+    inp.addEventListener('input', function(){
+      var f = inp.dataset.f, rc = inp.dataset.rc;
+      if(rc==='row' || rc==='col'){
+        var r = parseInt(box.querySelector('[data-rc=row]').value,10);
+        var c = parseInt(box.querySelector('[data-rc=col]').value,10);
+        if(!isFinite(r)||!isFinite(c)) return;
+        var nx = state.grid.minX + (c-1)*state.grid.stepX, ny = state.grid.minY + (r-1)*state.grid.stepY;
+        var occ = state.students.filter(function(t){ return t.id!==s.id && t.x===nx && t.y===ny; })[0];
+        if(occ){ toast('第'+r+'排第'+c+'列已被占用'); return; }
+        s.x = nx; s.y = ny;
+      }else if(f==='x' || f==='y'){
+        s[f] = parseInt(inp.value,10) || 0;
+      }else{
+        s[f] = inp.value;
+      }
+      computeGridKeep();
+      renderSeat(); renderTable(); renderStats(); renderIssues();
+      $('#selTag').textContent = '第'+rowOf(s.y)+'排第'+colOf(s.x)+'列';
+      syncBad();
+    });
+    inp.addEventListener('focus', function(){ inp.select && inp.select(); });
+  });
+  box.querySelector('[data-act=sign]').addEventListener('click', function(){
+    s.signState = (s.signState==='1')?'0':'1'; renderAll(); toast(s.signState==='1'?'已标记签到':'已取消签到');
+  });
+  box.querySelector('[data-act=del]').addEventListener('click', function(){
+    if(!confirm('确定删除「'+(s.name||'无名')+'」？')) return;
+    state.students = state.students.filter(function(x){ return x.id!==s.id; });
+    state.sel = null; renderAll();
+  });
+
+  function syncBad(){
+    var nameI = box.querySelector('[data-f=name]'); if(nameI) nameI.className = isUnnamed(s.name)?'bad':'';
+    var ipI = box.querySelector('[data-f=ip]'); if(ipI) ipI.className = analyze().dupIp.some(function(g){return g.indexOf(s)>=0;})?'bad':'';
+    var macI = box.querySelector('[data-f=mac]'); if(macI) macI.className = analyze().dupMac.some(function(g){return g.indexOf(s)>=0;})?'bad':'';
+  }
+  function computeGridKeep(){
+    // 网格需覆盖所有学生坐标（含手动输入的越界值）
+    var xs = state.students.map(function(t){return t.x;}), ys = state.students.map(function(t){return t.y;});
+    var g = state.grid;
+    g.minX = Math.min(g.minX, Math.min.apply(null,xs)); g.maxX = Math.max(g.maxX, Math.max.apply(null,xs));
+    g.minY = Math.min(g.minY, Math.min.apply(null,ys)); g.maxY = Math.max(g.maxY, Math.max.apply(null,ys));
+    g.cols = Math.round((g.maxX-g.minX)/g.stepX)+1;
+    g.rows = Math.round((g.maxY-g.minY)/g.stepY)+1;
+  }
+}
+
+function select(id, quiet){
+  state.sel = id;
+  renderSeat();
+  if(!quiet) renderTable();   // 表格内正在输入时不重建，避免焦点丢失
+  renderDetail();
+  if(!quiet && state.view==='seat'){
+    var el = document.querySelector('.seat[data-id="'+id+'"]');
+    if(el && el.scrollIntoView) el.scrollIntoView({block:'nearest', inline:'nearest'});
+  }
+}
+
+function renderAll(){ renderSeat(); renderTable(); renderStats(); renderIssues(); renderDetail(); }
+
+/* ============ 排序 ============ */
+function sortBySeat(){
+  state.students.sort(function(a,b){ return (a.y-b.y) || (a.x-b.x); });
+}
+function sortStudents(key){
+  if(state.sortKey===key) state.sortAsc = !state.sortAsc; else { state.sortKey=key; state.sortAsc=true; }
+  var d = state.sortAsc?1:-1;
+  state.students.sort(function(a,b){
+    var va, vb;
+    if(key==='name'){ va=a.name; vb=b.name; return String(va).localeCompare(String(vb),'zh')*d; }
+    if(key==='seat'){ return ((a.y-b.y)||(a.x-b.x))*d; }
+    if(key==='sign'){ return ((+a.signState)-(+b.signState))*d; }
+    if(key==='ip'||key==='mac'){
+      var pa=(a[key]||'').split('.').map(Number), pb=(b[key]||'').split('.').map(Number);
+      if(key==='ip' && pa.length===4 && pb.length===4){ for(var i=0;i<4;i++){ if(pa[i]!==pb[i]) return (pa[i]-pb[i])*d; } return 0; }
+      return String(a[key]).localeCompare(String(b[key]))*d;
+    }
+    return 0;
+  });
+  renderAll();
+}
+
+/* ============ 导出 ============ */
+function buildXML(){
+  var out = '<?xml version="1.0" encoding="utf-8" standalone="yes" ?>\n';
+  out += '<classmodel version="' + esc(state.meta.version) + '" name="' + esc(state.meta.name) + '">\n';
+  out += '<students>\n';
+  state.students.forEach(function(s){
+    out += '<student>\n';
+    out += '  <name>' + esc(s.name) + '</name>\n';
+    out += '  <address mac="' + esc(s.mac) + '" IP="' + esc(s.ip) + '" VMTDIP="' + esc(s.vmtdip) + '" />\n';
+    out += '  <posThumb x="' + s.x + '" y="' + s.y + '" />\n';
+    out += '  <group id="' + esc(s.groupId) + '" leader="' + esc(s.leader) + '" x="' + esc(s.gx) + '" y="' + esc(s.gy) + '" />\n';
+    out += '  <signIn state="' + esc(s.signState) + '" id="' + esc(s.signId) + '" />\n';
+    out += '  <platform id="' + esc(s.platformId) + '" />\n';
+    out += '</student>\n';
+  });
+  out += '</students>\n';
+  out += '<groups>\n' + state.groupsHTML.split('\n').map(function(l){ return '  ' + l.trim(); }).join('\n') + '\n</groups>\n';
+  out += '  ' + state.signHTML.trim() + '\n';
+  out += '</classmodel>\n';
+  return out;
+}
+function download(name, content, mime){
+  var blob = new Blob(['\ufeff' + content], {type: mime || 'text/xml;charset=utf-8'});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click();
+  setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 500);
+}
+function baseName(){
+  var n = (state.fileName || state.meta.name || '班级').replace(/\.(cls|xml|txt)$/i,'');
+  return n || '班级';
+}
+
+/* ============ 新增 / 重排 ============ */
+function addStudent(){
+  var g = state.grid, used = {};
+  state.students.forEach(function(s){ used[s.x+','+s.y]=1; });
+  var x=null, y=null;
+  for(var r=0;r<g.rows+2 && x===null;r++){
+    for(var c=0;c<g.cols+2;c++){
+      var tx = g.minX + c*g.stepX, ty = g.minY + r*g.stepY;
+      if(!used[tx+','+ty]){ x=tx; y=ty; break; }
+    }
+  }
+  var nums = state.students.map(function(s){ var m=/(\d{1,3})$/.exec(s.ip||''); return m?+m[1]:0; });
+  var next = Math.max.apply(null, nums.concat([0])) + 1;
+  var mp = /^(\d{1,3}\.\d{1,3}\.\d{1,3}\.)/.exec(state.students.length ? (state.students[0].ip||'') : '');
+  var prefix = mp ? mp[1] : '10.5.54.';
+  var st = {
+    id: uid++, name:'新学生', mac:'', ip: prefix + next, vmtdip:'0.0.0.0',
+    x:x, y:y, groupId:'0', leader:'0', gx:'0', gy:'0', signState:'0', signId:'0', platformId:'1'
+  };
+  state.students.push(st);
+  computeGrid(); sortBySeat(); select(st.id);
+  toast('已新增学生，请在右侧填写姓名 / MAC');
+}
+function compact(){
+  if(!confirm('将按当前名单顺序，从第 1 排第 1 列起依次重新填满机位。原座位布局会被覆盖，确定继续？')) return;
+  var g = state.grid;
+  state.students.forEach(function(s,i){
+    s.x = g.minX + (i % g.cols) * g.stepX;
+    s.y = g.minY + Math.floor(i / g.cols) * g.stepY;
+  });
+  computeGrid(); renderAll(); toast('已按名单顺序重排机位');
+}
+
+/* ============ 载入 / 视图 ============ */
+function loadText(text, name){
+  parseCls(text, name);
+  $('#startPage').hidden = true;
+  $('#appPage').hidden = false;
+  $('#fileInfo').textContent = '📄 ' + (name||'未命名') + ' · ' + state.students.length + ' 人';
+  $('#clsName').textContent = state.meta.name;
+  $('#btnSave').disabled = false; $('#btnCsv').disabled = false;
+  renderAll();
+  toast('已载入 ' + state.students.length + ' 名学生');
+}
+function newClass(){
+  state.students = [];
+  state.meta = {version:'2.0', name:'新建班级'};
+  state.groupsHTML = '<group id="255" function_mask="-1" arrange="0" name="所有成员" cx="80" cy="60" />';
+  state.signHTML = '<signInInfos signInStrategy="0" signInSeqId="0" />';
+  state.grid = {minX:10,maxX:10,stepX:96,minY:10,maxY:10,stepY:94,cols:1,rows:1};
+  state.loaded = true; state.sel = null; state.fileName='新建班级.cls';
+  $('#startPage').hidden = true; $('#appPage').hidden = false;
+  $('#fileInfo').textContent = '📄 新建空白班级';
+  $('#clsName').textContent = state.meta.name;
+  $('#btnSave').disabled = false; $('#btnCsv').disabled = false;
+  addStudent(); renderAll();
+}
+function switchView(v){
+  state.view = v;
+  document.querySelectorAll('.tab').forEach(function(t){ t.classList.toggle('on', t.dataset.view===v); });
+  $('#seatView').hidden = (v!=='seat');
+  $('#tableView').hidden = (v!=='table');
+}
+
+/* ============ 事件绑定 ============ */
+$('#btnOpen').addEventListener('click', function(){ $('#fileInput').click(); });
+$('#btnOpen2').addEventListener('click', function(){ $('#fileInput').click(); });
+$('#fileInput').addEventListener('change', function(e){
+  var f = e.target.files && e.target.files[0];
+  if(f) readFile(f);
+  e.target.value = '';
+});
+function readFile(f){
+  var fr = new FileReader();
+  fr.onload = function(){
+    try{ loadText(String(fr.result), f.name); }
+    catch(err){ alert('载入失败：' + err.message); }
+  };
+  fr.onerror = function(){ alert('文件读取失败'); };
+  fr.readAsText(f, 'utf-8');
+}
+function hasFiles(e){
+  var t = e.dataTransfer && e.dataTransfer.types;
+  if(!t) return false;
+  for(var i=0;i<t.length;i++){ if(t[i]==='Files') return true; }
+  return false;
+}
+['dragenter','dragover'].forEach(function(ev){
+  window.addEventListener(ev, function(e){ if(!hasFiles(e)) return; e.preventDefault(); $('#dropMask').classList.add('on'); });
+});
+window.addEventListener('dragleave', function(e){ if(!hasFiles(e)) return; $('#dropMask').classList.remove('on'); });
+window.addEventListener('drop', function(e){
+  if(!hasFiles(e)) return;
+  e.preventDefault();
+  $('#dropMask').classList.remove('on');
+  var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+  if(f) readFile(f);
+});
+$('#dropZone').addEventListener('dragover', function(){ $('#dropZone').classList.add('hot'); });
+$('#dropZone').addEventListener('dragleave', function(){ $('#dropZone').classList.remove('hot'); });
+
+$('#btnSave').addEventListener('click', function(){
+  var xml = buildXML();
+  download(baseName() + '.cls', xml, 'text/xml;charset=utf-8');
+  toast('已导出 ' + baseName() + '.cls（可直接导入极域）');
+});
+$('#btnCsv').addEventListener('click', function(){
+  var head = ['姓名','IP','MAC','虚拟机IP','排','列','坐标X','坐标Y','签到','平台'];
+  var lines = [head.join(',')];
+  state.students.forEach(function(s){
+    lines.push([q(s.name), q(s.ip), q(s.mac), q(s.vmtdip), rowOf(s.y), colOf(s.x), s.x, s.y, s.signState, s.platformId].join(','));
+  });
+  function q(v){ v=String(v==null?'':v); return /[",\n]/.test(v) ? '"'+v.replace(/"/g,'""')+'"' : v; }
+  download(baseName() + '.csv', lines.join('\n'), 'text/csv;charset=utf-8');
+  toast('已导出 CSV 名单');
+});
+$('#btnNew').addEventListener('click', newClass);
+$('#btnAdd').addEventListener('click', addStudent);
+$('#btnCompact').addEventListener('click', compact);
+$('#q').addEventListener('input', function(e){ state.q = e.target.value; renderSeat(); renderTable(); });
+$('#showEmpty').addEventListener('change', function(e){ state.showEmpty = e.target.checked; renderSeat(); });
+$('#zoom').addEventListener('input', function(e){ document.documentElement.style.setProperty('--cw', e.target.value + 'px'); });
+document.querySelectorAll('.tab').forEach(function(t){ t.addEventListener('click', function(){ switchView(t.dataset.view); }); });
+document.querySelectorAll('th[data-sort]').forEach(function(th){
+  th.addEventListener('click', function(){ sortStudents(th.dataset.sort); });
+});
+$('#clsName').addEventListener('dblclick', function(){
+  var v = prompt('班级名称：', state.meta.name);
+  if(v!=null){ state.meta.name = v.trim() || state.meta.name; $('#clsName').textContent = state.meta.name; }
+});
+$('#clsName').title = '双击可修改班级名称';
+window.addEventListener('keydown', function(e){
+  if(e.key==='Escape'){ state.sel=null; renderSeat(); renderTable(); renderDetail(); }
+  if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='s'){ e.preventDefault(); if(state.loaded) $('#btnSave').click(); }
+  if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='f'){ e.preventDefault(); $('#q').focus(); }
+});
+
+/* 自动载入同目录附带的文件（若通过 file:// 打开则不可用，属正常现象） */
+window.addEventListener('DOMContentLoaded', function(){ /* 离线单文件，无需联网资源 */ });
+
 })();
 </script>
 </body>
