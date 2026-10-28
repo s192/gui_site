@@ -34,6 +34,22 @@ h1 span{color:var(--brand)}
 .drop .d{color:var(--sub);font-size:12px;margin-top:5px;line-height:1.6}
 .drop .fn{margin-top:8px;font-size:12px;color:var(--brand2);word-break:break-all;min-height:16px}
 .drop input{display:none}
+.drop .paste{margin-top:10px;font-size:12px;padding:6px 12px;border-radius:8px}
+/* modal */
+.modal{position:fixed;inset:0;background:rgba(8,12,20,.72);display:flex;align-items:center;
+  justify-content:center;z-index:50;padding:20px}
+.modal.hidden{display:none}
+.mbox{background:var(--panel);border:1px solid var(--line);border-radius:16px;width:min(760px,100%);
+  padding:20px;box-shadow:0 20px 60px rgba(0,0,0,.45)}
+.mtitle{font-size:17px;font-weight:700;margin-bottom:6px}
+.mhint{color:var(--sub);font-size:12.5px;line-height:1.7;margin-bottom:12px}
+.mbox textarea{width:100%;height:260px;background:#121826;border:1px solid var(--line);color:var(--txt);
+  border-radius:12px;padding:12px;font-size:13px;line-height:1.6;resize:vertical;outline:none;
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.mbox textarea:focus{border-color:var(--brand)}
+.merr{color:#fca5a5;font-size:12.5px;margin-top:8px;min-height:16px;white-space:pre-wrap}
+.mbtns{display:flex;align-items:center;gap:10px;margin-top:12px}
+.mcount{color:var(--sub);font-size:12px}
 .upbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:18px}
 button{background:var(--panel2);border:1px solid var(--line);color:var(--txt);border-radius:10px;
   padding:9px 14px;font-size:13px;cursor:pointer;font-family:inherit;transition:.15s}
@@ -128,7 +144,7 @@ footer{margin-top:18px;color:#5b6784;font-size:12px;text-align:center;line-heigh
 <div class="wrap">
 <header>
   <h1><span>洛谷比赛 · 团队成绩看板</span> · 上传 JSON 生成</h1>
-  <div class="sub">上传洛谷 JSON：<b>团队文件</b>（members + 备注/实名）、<b>比赛榜单文件</b>（scoreboard 或 rows）、<b>比赛信息文件</b>（比赛名称与题目列表，可选）。顺序可颠倒，系统按字段自动识别；数据只在浏览器本地解析，不会上传。</div>
+  <div class="sub">上传或粘贴洛谷 JSON：<b>团队</b>（members + 备注/实名）、<b>比赛榜单</b>（scoreboard / rows，数组顺序即名次）、<b>比赛信息</b>（比赛名称与题目列表，可选）。顺序可颠倒，系统按字段自动识别；也可直接在页面按 <b>Ctrl/⌘ + V</b> 粘贴。数据只在浏览器本地解析，不会上传。</div>
   <div class="sub" id="meta"></div>
 </header>
 
@@ -138,17 +154,19 @@ footer{margin-top:18px;color:#5b6784;font-size:12px;text-align:center;line-heigh
   <div class="drop" id="d1">
     <div class="ico">📥</div>
     <div class="t">团队 JSON</div>
-    <div class="d">点击选择，或把文件拖到这里</div>
+    <div class="d">点击选择、拖拽文件，或点下方按钮粘贴</div>
     <div class="d">（从洛谷团队中获取）</div>
     <div class="fn"></div>
+    <button class="paste" data-k="team">📋 粘贴内容</button>
     <input type="file" accept=".json,application/json">
   </div>
   <div class="drop" id="d2">
     <div class="ico">📥</div>
     <div class="t">比赛榜单 JSON</div>
-    <div class="d">点击选择，或把文件拖到这里</div>
+    <div class="d">点击选择、拖拽文件，或点下方按钮粘贴</div>
     <div class="d">（从洛谷榜单对应JS调试中获取）</div>
     <div class="fn"></div>
+    <button class="paste" data-k="board">📋 粘贴内容</button>
     <input type="file" accept=".json,application/json">
   </div>
   <div class="drop opt" id="d3">
@@ -157,7 +175,23 @@ footer{margin-top:18px;color:#5b6784;font-size:12px;text-align:center;line-heigh
     <div class="d">用于显示比赛名称、时间与题号题名</div>
     <div class="d">（从洛谷比赛HTML中获取）</div>
     <div class="fn"></div>
+    <button class="paste" data-k="info">📋 粘贴内容</button>
     <input type="file" accept=".json,application/json">
+  </div>
+</div>
+
+<div class="modal hidden" id="modal">
+  <div class="mbox">
+    <div class="mtitle" id="mtitle">粘贴 JSON</div>
+    <div class="mhint">把 JSON 内容粘贴到下面（支持从浏览器地址栏、接口响应、编辑器里复制的文本）。也可以直接在页面任意处按 Ctrl/⌘ + V 自动识别。</div>
+    <textarea id="mtext" spellcheck="false" placeholder='例如：{ "data": { "members": ... } }  或  [ { "user": ..., "score": 400 } ]'></textarea>
+    <div class="merr" id="merr"></div>
+    <div class="mbtns">
+      <span class="mcount" id="mcount"></span>
+      <span class="spacer"></span>
+      <button id="mcancel">取消</button>
+      <button class="primary" id="mok">确定</button>
+    </div>
   </div>
 </div>
 
@@ -340,40 +374,119 @@ function build(teamObj, boardObj, infoObj, boardName){
 }
 
 /* ---------- 上传交互 ---------- */
+const NAME = {team:'团队 JSON', board:'比赛榜单 JSON', info:'比赛信息 JSON'};
+
+// 接收一份已解析的对象：自动识别类型并放到对应槽位
+function accept(obj, srcName, fromEl){
+  const k = detect(obj);
+  if(!k) throw new Error('无法识别该内容：找不到 members / scoreboard / rows / contestProblems，请确认是洛谷团队、榜单或比赛 JSON');
+  const def = k === 'team' ? $('d1') : (k === 'board' ? $('d2') : $('d3'));
+  // 指定槽位与识别结果不符时，按实际类型放到它该去的槽位
+  const moved = !!(fromEl && fromEl.dataset.slotk !== k);
+  const el = (fromEl && !moved) ? fromEl : def;
+  if(files[k] && files[k].el !== el){
+    files[k].el.classList.remove('done'); files[k].el.querySelector('.fn').textContent = '';
+  }
+  files[k] = {obj: obj, el: el, name: srcName};
+  el.classList.add('done');
+  el.querySelector('.fn').textContent = '✓ ' + srcName;
+  el.querySelector('.t').textContent = NAME[k] + '（已就绪）';
+  return {k: k, moved: moved};
+}
+function afterAccept(res){
+  const k = res.k;
+  if(res.moved) $('tip').textContent = '内容识别为「' + NAME[k] + '」，已放到对应的' + NAME[k] + '位置';
+  if(files.team && files.board) go();
+  else if(!res.moved){
+    const miss = [];
+    if(!files.team) miss.push('团队');
+    if(!files.board) miss.push('榜单');
+    $('tip').textContent = '已收到「' + NAME[k] + '」，还差' + miss.join('、') + '文件…';
+  }
+}
+function takeJSON(txt, srcName, fromEl){
+  const obj = JSON.parse(txt);
+  const res = accept(obj, srcName, fromEl);
+  afterAccept(res);
+}
+
 function slot(el){
   const input = el.querySelector('input');
-  const label = el.querySelector('.t'), fnEl = el.querySelector('.fn');
-  el.onclick = e => { if(e.target !== input) input.click(); };
-  input.onchange = () => { const f = input.files[0]; if(f) handle(f); };
+  const fnEl = el.querySelector('.fn');
+  el.onclick = e => {
+    if(e.target === input || e.target.closest('.paste')) return;
+    input.click();
+  };
+  input.onchange = () => { const f = input.files[0]; if(f) handleFile(f); };
   ['dragenter','dragover'].forEach(ev => el.addEventListener(ev, e => { e.preventDefault(); el.classList.add('over'); }));
   ['dragleave','drop'].forEach(ev => el.addEventListener(ev, e => { e.preventDefault(); el.classList.remove('over'); }));
-  el.addEventListener('drop', e => { const f = e.dataTransfer.files[0]; if(f) handle(f); });
-  const NAME = {team:'团队 JSON', board:'比赛榜单 JSON', info:'比赛信息 JSON'};
+  el.addEventListener('drop', e => {
+    const dt = e.dataTransfer;
+    if(dt.files && dt.files[0]){ handleFile(dt.files[0]); return; }
+    const txt = dt.getData('text');           // 拖拽文本也能直接解析
+    if(txt && txt.trim()){ showErr(''); try{ takeJSON(txt, '拖入的文本', el); }catch(err){ showErr(err.message); } }
+  });
+  el.querySelector('.paste').onclick = e => { e.stopPropagation(); openModal(el.dataset.slotk); };
 
-  async function handle(f){
+  async function handleFile(f){
     showErr('');
     try{
       const obj = await readJSON(f);
-      const k = detect(obj);
-      if(!k) throw new Error('无法识别该文件类型：找不到 members / scoreboard / rows / contestProblems，请确认是洛谷团队、榜单或比赛 JSON');
-      if(files[k] && files[k].el !== el){
-        files[k].el.classList.remove('done'); files[k].el.querySelector('.fn').textContent = '';
-      }
-      files[k] = {obj: obj, el: el, name: f.name};
-      el.classList.add('done');
-      fnEl.textContent = '✓ ' + f.name;
-      label.textContent = NAME[k] + '（已就绪）';
-      if(files.team && files.board) go();
-      else{
-        const miss = [];
-        if(!files.team) miss.push('团队');
-        if(!files.board) miss.push('榜单');
-        $('tip').textContent = '已收到「' + NAME[k] + '」，还差' + miss.join('、') + '文件…';
-      }
+      afterAccept(accept(obj, f.name, el));
     }catch(e){ showErr(f.name + '：' + e.message); }
   }
 }
-['d1','d2','d3'].forEach(id => slot($(id)));
+['d1','d2','d3'].forEach((id, i) => {
+  const el = $(id);
+  el.dataset.slotk = ['team','board','info'][i];
+  slot(el);
+});
+
+/* ---------- 粘贴弹窗 ---------- */
+let modalKind = null;
+function openModal(kind){
+  modalKind = kind;
+  $('mtitle').textContent = '粘贴 ' + NAME[kind];
+  $('mtext').value = '';
+  $('merr').textContent = '';
+  $('mcount').textContent = '';
+  $('modal').classList.remove('hidden');
+  setTimeout(() => $('mtext').focus(), 30);
+}
+function closeModal(){ $('modal').classList.add('hidden'); modalKind = null; }
+$('mcancel').onclick = closeModal;
+$('modal').onclick = e => { if(e.target === $('modal')) closeModal(); };
+$('mtext').addEventListener('input', () => {
+  const t = $('mtext').value.trim();
+  $('mcount').textContent = t ? t.length + ' 字符' : '';
+  $('merr').textContent = '';
+});
+$('mok').onclick = () => {
+  const txt = $('mtext').value.trim();
+  if(!txt){ $('merr').textContent = '内容为空，请先粘贴 JSON'; return; }
+  const big = txt.length > 500000;
+  if(big) $('merr').textContent = '内容较大，正在解析…';
+  setTimeout(() => {
+    try{
+      takeJSON(txt, '粘贴内容', modalKind ? $({team:'d1',board:'d2',info:'d3'}[modalKind]) : null);
+      closeModal(); showErr('');
+    }catch(e){ $('merr').textContent = e.message; }
+  }, big ? 30 : 0);
+};
+// Ctrl/⌘+V 全局粘贴：自动识别类型
+document.addEventListener('paste', e => {
+  const t = e.target;
+  if(t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+  if(!$('modal').classList.contains('hidden')) return;
+  const txt = (e.clipboardData || window.clipboardData).getData('text');
+  if(!txt || !txt.trim()) return;
+  showErr('');
+  try{ takeJSON(txt, '剪贴板内容', null); }
+  catch(err){ showErr(err.message); }
+});
+document.addEventListener('keydown', e => {
+  if(e.key === 'Escape' && !$('modal').classList.contains('hidden')) closeModal();
+});
 
 function showErr(msg){ const e = $('err'); e.textContent = msg; e.style.display = msg ? 'block' : 'none'; }
 
